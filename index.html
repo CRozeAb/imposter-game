@@ -3,17 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Imposter</title>
-
+<title>Imposter Party Game</title>
 <style>
+/* --- Global & Body --- */
 body{
   margin:0;
-  font-family: 'Segoe UI', sans-serif;
-  background: linear-gradient(135deg,#0f172a,#1e293b);
+  font-family:'Segoe UI', sans-serif;
+  background:linear-gradient(135deg,#0f0f1f,#1b1b33);
   color:white;
   overflow:hidden;
 }
 
+/* --- Screen base --- */
 .screen{
   position:absolute;
   width:100%;
@@ -22,16 +23,56 @@ body{
   flex-direction:column;
   justify-content:center;
   align-items:center;
-  transition:all 0.4s ease;
+  transition:all 0.5s cubic-bezier(0.4,0,0.2,1);
   transform:translateX(100%);
   opacity:0;
 }
-
 .screen.active{
   transform:translateX(0);
   opacity:1;
 }
 
+/* --- Card styling --- */
+.card{
+  background:#1e1e40;
+  padding:30px;
+  border-radius:16px;
+  box-shadow:0 0 20px rgba(0,0,0,0.6);
+  text-align:center;
+  min-width:280px;
+  animation:fadeIn 0.5s ease;
+}
+@keyframes fadeIn{
+  from{opacity:0; transform:translateY(10px);}
+  to{opacity:1; transform:translateY(0);}
+}
+
+/* --- Typography --- */
+.title{
+  font-size:32px;
+  margin-bottom:20px;
+  letter-spacing:1px;
+}
+.big{
+  font-size:28px;
+  margin:10px 0;
+}
+.small{
+  font-size:14px;
+  opacity:0.8;
+}
+.imposter{
+  color:#ef4444;
+  font-weight:bold;
+  animation:pulse 1.2s infinite;
+}
+@keyframes pulse{
+  0%{opacity:1;}
+  50%{opacity:0.5;}
+  100%{opacity:1;}
+}
+
+/* --- Buttons & Input --- */
 button{
   padding:12px 24px;
   border:none;
@@ -41,14 +82,12 @@ button{
   font-size:16px;
   cursor:pointer;
   margin:8px;
-  transition:0.2s;
+  transition:all 0.2s;
 }
-
 button:hover{
   background:#818cf8;
   transform:scale(1.05);
 }
-
 input{
   padding:10px;
   margin:6px;
@@ -56,54 +95,24 @@ input{
   border:none;
 }
 
-.card{
-  background:#1e293b;
-  padding:30px;
+/* --- Reveal card animations --- */
+.revealCard{
+  padding:20px 30px;
   border-radius:16px;
-  box-shadow:0 0 20px rgba(0,0,0,0.4);
-  text-align:center;
+  background:#2e2e50;
+  box-shadow:0 0 25px rgba(99,102,241,0.5);
   min-width:250px;
+  text-align:center;
   animation:fadeIn 0.5s ease;
 }
-
-@keyframes fadeIn{
-  from{opacity:0; transform:translateY(10px);}
-  to{opacity:1; transform:translateY(0);}
-}
-
-.title{
-  font-size:32px;
-  margin-bottom:20px;
-  letter-spacing:1px;
-}
-
-.big{
-  font-size:28px;
-  margin:10px 0;
-}
-
-.small{
-  font-size:14px;
-  opacity:0.8;
-}
-
-.imposter{
-  color:#ef4444;
-  font-weight:bold;
+.imposterPulse{
   animation:pulse 1.2s infinite;
-}
-
-@keyframes pulse{
-  0%{opacity:1;}
-  50%{opacity:0.5;}
-  100%{opacity:1;}
 }
 </style>
 </head>
-
 <body>
 
-<!-- SCREEN 1 -->
+<!-- Screen 1: Player Count + Hint Toggle -->
 <div id="screen-players" class="screen active">
   <div class="card">
     <div class="title">Imposter</div>
@@ -115,38 +124,39 @@ input{
       Remove hints for imposter
     </label>
     <br>
-    <button onclick="setupPlayers()">Start</button>
+    <button onclick="setupPlayers()">Next</button>
   </div>
 </div>
 
-<!-- SCREEN 2 -->
+<!-- Screen 2: Player Names -->
 <div id="screen-names" class="screen">
   <div class="card">
-    <div class="title">Enter Names</div>
+    <div class="title">Enter Player Names</div>
     <div id="nameInputs"></div>
-    <button onclick="startGame()">Begin Game</button>
+    <button onclick="startGame()">Start Game</button>
     <button onclick="goBack('screen-players')">Back</button>
   </div>
 </div>
 
-<!-- SCREEN 3 -->
+<!-- Screen 3: Player Reveal -->
 <div id="screen-reveal" class="screen">
-  <div class="card" id="revealCard">
+  <div class="revealCard" id="revealCard">
     <div class="big" id="revealText"></div>
     <button onclick="nextReveal()">Next</button>
+    <button onclick="goBackReveal()">Back</button>
   </div>
 </div>
 
-<!-- SCREEN 4 -->
+<!-- Screen 4: Who Starts First -->
 <div id="screen-starting" class="screen">
   <div class="card">
-    <div class="small">Discussion Begins With</div>
+    <div class="small">Discussion starts with:</div>
     <div class="big" id="startingPlayer"></div>
     <button onclick="goTo('screen-results')">Continue</button>
   </div>
 </div>
 
-<!-- SCREEN 5 -->
+<!-- Screen 5: Results -->
 <div id="screen-results" class="screen">
   <div class="card">
     <div class="title">Results</div>
@@ -156,11 +166,13 @@ input{
 </div>
 
 <script>
+// --- Game Data ---
 let players = [];
 let imposterIndex = null;
 let currentReveal = 0;
 let selectedWord = null;
 
+// --- Categories / Words with single-word hints ---
 const words = [
   {word:"Titanic", hint:"Ice"},
   {word:"Lion", hint:"Mane"},
@@ -174,15 +186,19 @@ const words = [
   {word:"Phone", hint:"Signal"}
 ];
 
+// --- Screen Navigation ---
 function goTo(id){
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
   document.getElementById(id).classList.add("active");
 }
 
-function goBack(id){
-  goTo(id);
+// --- Back from Reveal ---
+function goBackReveal(){
+  if(currentReveal>0) currentReveal--;
+  revealPlayer();
 }
 
+// --- Setup Player Name Inputs ---
 function setupPlayers(){
   const count = parseInt(document.getElementById("playerCount").value);
   if(count < 3 || count > 12) return alert("3-12 players only");
@@ -195,6 +211,7 @@ function setupPlayers(){
   goTo("screen-names");
 }
 
+// --- Start Game ---
 function startGame(){
   players = [];
   const count = document.querySelectorAll("#nameInputs input").length;
@@ -206,10 +223,11 @@ function startGame(){
   imposterIndex = Math.floor(Math.random()*players.length);
   currentReveal = 0;
 
-  goTo("screen-reveal");
   revealPlayer();
+  goTo("screen-reveal");
 }
 
+// --- Reveal Logic ---
 function revealPlayer(){
   const revealText = document.getElementById("revealText");
   const noHints = document.getElementById("noHints").checked;
@@ -231,22 +249,19 @@ function revealPlayer(){
   }
 }
 
+// --- Next Reveal ---
 function nextReveal(){
   currentReveal++;
   revealPlayer();
 }
 
+// --- Weighted Starter Logic ---
 function chooseStarter(){
   let weightedPlayers = [];
-
   players.forEach((p,i)=>{
-    if(i === imposterIndex){
-      weightedPlayers.push(p); // 1 entry
-    } else {
-      weightedPlayers.push(p,p); // double chance
-    }
+    if(i===imposterIndex) weightedPlayers.push(p); // 1 entry
+    else weightedPlayers.push(p,p); // double chance
   });
-
   const starter = weightedPlayers[Math.floor(Math.random()*weightedPlayers.length)];
   document.getElementById("startingPlayer").innerText = starter;
   goTo("screen-starting");
@@ -254,6 +269,7 @@ function chooseStarter(){
   generateResults();
 }
 
+// --- Generate Results ---
 function generateResults(){
   const imposterName = players[imposterIndex];
   document.getElementById("resultsContent").innerHTML = `
@@ -262,10 +278,10 @@ function generateResults(){
   `;
 }
 
+// --- Restart Game ---
 function restartGame(){
   location.reload();
 }
 </script>
-
 </body>
 </html>
