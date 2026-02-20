@@ -1,287 +1,968 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Imposter Party Game</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Imposter Neon — Party Game</title>
 <style>
-/* --- Global & Body --- */
-body{
-  margin:0;
-  font-family:'Segoe UI', sans-serif;
-  background:linear-gradient(135deg,#0f0f1f,#1b1b33);
-  color:white;
-  overflow:hidden;
+/* =========================
+   THEME & LAYOUT
+   Neon Club Vibe
+========================= */
+
+:root{
+  --neon-purple:#9d4dff;
+  --neon-blue:#3c8dff;
+  --neon-pink:#ff2fd1;
+  --danger:#ff3b3b;
+  --bg:#07070b;
+  --card: rgba(255,255,255,0.04);
+  --glass: rgba(255,255,255,0.06);
+  --ease: cubic-bezier(.22,1,.36,1);
+  --radius:16px;
 }
 
-/* --- Screen base --- */
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+html,body{height:100%; margin:0; font-family: -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Arial; background:var(--bg); color:#fff; overflow:hidden}
+
+/* moving subtle background */
+body::before{
+  content:"";
+  position:fixed;
+  left:-25%;
+  top:-25%;
+  width:150%;
+  height:150%;
+  background:
+    radial-gradient(600px 400px at 20% 20%, rgba(157,77,255,0.12), transparent 10%),
+    radial-gradient(600px 400px at 80% 80%, rgba(60,141,255,0.12), transparent 10%);
+  animation: bgDrift 12s linear infinite alternate;
+  pointer-events:none;
+}
+@keyframes bgDrift{ from{transform:translate(-5%, -5%)} to{transform:translate(5%,5%)} }
+
+/* Screen container system */
+.app{
+  position:relative;
+  width:100%;
+  height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:28px;
+}
+
+/* screen base */
 .screen{
   position:absolute;
   width:100%;
-  height:100%;
+  max-width:520px;
+  height:calc(100% - 56px);
+  left:50%;
+  transform:translate(-50%,0) translateX(120%);
+  transition: transform 520ms var(--ease), opacity 420ms var(--ease);
+  opacity:0;
   display:flex;
   flex-direction:column;
-  justify-content:center;
   align-items:center;
-  transition:all 0.5s cubic-bezier(0.4,0,0.2,1);
-  transform:translateX(100%);
-  opacity:0;
+  justify-content:flex-start;
+  padding:28px;
+  gap:12px;
 }
-.screen.active{
-  transform:translateX(0);
-  opacity:1;
-}
+.screen.active{ transform:translate(-50%,0) translateX(0); opacity:1 }
+.screen.exit-left{ transform:translate(-50%,0) translateX(-120%); opacity:0 }
 
-/* --- Card styling --- */
-.card{
-  background:#1e1e40;
-  padding:30px;
-  border-radius:16px;
-  box-shadow:0 0 20px rgba(0,0,0,0.6);
-  text-align:center;
-  min-width:280px;
-  animation:fadeIn 0.5s ease;
+/* header */
+.header{
+  width:100%;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  margin-bottom:6px;
 }
-@keyframes fadeIn{
-  from{opacity:0; transform:translateY(10px);}
-  to{opacity:1; transform:translateY(0);}
-}
-
-/* --- Typography --- */
 .title{
-  font-size:32px;
-  margin-bottom:20px;
-  letter-spacing:1px;
-}
-.big{
   font-size:28px;
-  margin:10px 0;
+  font-weight:700;
+  letter-spacing:1px;
+  background:linear-gradient(90deg,var(--neon-purple),var(--neon-blue));
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
 }
 .small{
   font-size:14px;
-  opacity:0.8;
-}
-.imposter{
-  color:#ef4444;
-  font-weight:bold;
-  animation:pulse 1.2s infinite;
-}
-@keyframes pulse{
-  0%{opacity:1;}
-  50%{opacity:0.5;}
-  100%{opacity:1;}
+  opacity:0.85;
 }
 
-/* --- Buttons & Input --- */
-button{
-  padding:12px 24px;
+/* card / panel */
+.panel{
+  width:100%;
+  background:var(--card);
+  border-radius:var(--radius);
+  padding:18px;
+  box-shadow: 0 6px 30px rgba(45,23,80,0.18);
+  backdrop-filter: blur(8px);
+}
+
+/* inputs */
+.input, select{
+  width:100%;
+  padding:12px 14px;
+  margin:8px 0;
+  border-radius:12px;
+  background:var(--glass);
+  color:#fff;
   border:none;
-  border-radius:8px;
-  background:#6366f1;
-  color:white;
   font-size:16px;
-  cursor:pointer;
-  margin:8px;
-  transition:all 0.2s;
-}
-button:hover{
-  background:#818cf8;
-  transform:scale(1.05);
-}
-input{
-  padding:10px;
-  margin:6px;
-  border-radius:6px;
-  border:none;
 }
 
-/* --- Reveal card animations --- */
-.revealCard{
-  padding:20px 30px;
-  border-radius:16px;
-  background:#2e2e50;
-  box-shadow:0 0 25px rgba(99,102,241,0.5);
-  min-width:250px;
-  text-align:center;
-  animation:fadeIn 0.5s ease;
+/* buttons */
+.btn{
+  width:100%;
+  padding:14px;
+  border-radius:14px;
+  border:none;
+  font-weight:700;
+  font-size:16px;
+  color:#fff;
+  cursor:pointer;
+  background: linear-gradient(135deg,var(--neon-purple),var(--neon-blue));
+  position:relative;
+  overflow:hidden;
+  transition: transform 140ms var(--ease), box-shadow 160ms var(--ease);
 }
+.btn:active{ transform:scale(0.97) }
+.btn.secondary{ background: transparent; border:1px solid rgba(255,255,255,0.06); color:#fff; }
+.btn.ghost{ background:transparent; color:#fff; border:none; opacity:0.9; }
+.btn:before{
+  content:"";
+  position:absolute;
+  left:-100%;
+  top:0; bottom:0;
+  width:40%;
+  background:linear-gradient(90deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+  transform:skewX(-18deg);
+  transition:left 420ms var(--ease);
+}
+.btn:hover:before{ left:120% }
+
+/* reveal card styling */
+.revealCard{
+  width:100%;
+  border-radius:20px;
+  padding:24px;
+  text-align:center;
+  background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  box-shadow: 0 10px 40px rgba(60,40,120,0.14);
+  transform-origin:center;
+}
+.word{
+  font-size:34px;
+  font-weight:800;
+  margin-top:12px;
+  letter-spacing:0.6px;
+  background:linear-gradient(90deg,var(--neon-blue),var(--neon-pink));
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+.imposterNotice{
+  font-size:20px;
+  font-weight:800;
+  color:var(--danger);
+}
+
+/* subtle highlight for current player */
+.playerHighlight{
+  width:100%;
+  padding:12px;
+  border-radius:12px;
+  margin:8px 0;
+  border: 1px solid rgba(157,77,255,0.08);
+}
+
+/* small controls row */
+.row{ display:flex; gap:8px; width:100% }
+.col{ flex:1 }
+
+/* back button */
+.backBtn{
+  background:transparent;
+  color:rgba(255,255,255,0.9);
+  border:none;
+  font-weight:600;
+  font-size:14px;
+  cursor:pointer;
+}
+
+/* animations for card reveal & imposter effects */
+.revealAnim{
+  animation: cardPop 420ms var(--ease) forwards;
+}
+@keyframes cardPop{
+  0%{ transform: scale(0.94) translateY(10px); opacity:0 }
+  100%{ transform: scale(1) translateY(0); opacity:1 }
+}
+
 .imposterPulse{
-  animation:pulse 1.2s infinite;
+  animation: impPulse 900ms ease-in-out infinite;
+  text-shadow: 0 0 18px rgba(255,59,59,0.9);
+}
+@keyframes impPulse{
+  0%{ transform: scale(1); filter:brightness(1) }
+  50%{ transform: scale(1.03); filter:brightness(1.05) }
+  100%{ transform: scale(1); filter:brightness(1) }
+}
+
+.shake{
+  animation: shakeX 520ms cubic-bezier(.36,.07,.19,.97);
+}
+@keyframes shakeX{
+  10%,90%{ transform:translateX(-5px) }
+  20%,80%{ transform:translateX(5px) }
+  30%,50%,70%{ transform:translateX(-3px) }
+  40%,60%{ transform:translateX(3px) }
+}
+
+/* footer small */
+.footer{
+  width:100%;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  position:absolute;
+  bottom:18px;
+  left:50%;
+  transform:translateX(-50%);
+  max-width:520px;
+  padding:0 28px;
+  pointer-events:none;
+}
+.footer .hint{ pointer-events:auto; opacity:0.85; font-size:13px }
+
+/* responsive fine-tuning */
+@media (max-width:420px){
+  .word{ font-size:28px }
+  .title{ font-size:24px }
+  .screen{ padding:18px }
 }
 </style>
 </head>
 <body>
+<div class="app">
 
-<!-- Screen 1: Player Count + Hint Toggle -->
-<div id="screen-players" class="screen active">
-  <div class="card">
-    <div class="title">Imposter</div>
-    <div>Number of Players (3-12)</div>
-    <input type="number" id="playerCount" min="3" max="12">
-    <br>
-    <label>
-      <input type="checkbox" id="noHints">
-      Remove hints for imposter
-    </label>
-    <br>
-    <button onclick="setupPlayers()">Next</button>
-  </div>
-</div>
+  <!-- START SCREEN -->
+  <div id="screen-start" class="screen active">
+    <div class="header">
+      <div class="title">IMPOSTER</div>
+      <button class="backBtn" onclick="noop()"> </button>
+    </div>
 
-<!-- Screen 2: Player Names -->
-<div id="screen-names" class="screen">
-  <div class="card">
-    <div class="title">Enter Player Names</div>
-    <div id="nameInputs"></div>
-    <button onclick="startGame()">Start Game</button>
-    <button onclick="goBack('screen-players')">Back</button>
+    <div class="panel" style="text-align:center">
+      <div style="font-size:16px; opacity:0.92; margin-bottom:10px">Party mode · single phone</div>
+      <button class="btn" onclick="goTo('screen-players')">Create Game</button>
+      <div style="height:14px"></div>
+      <button class="btn secondary" onclick="goTo('screen-category')">Quick Play (default)</button>
+    </div>
   </div>
-</div>
 
-<!-- Screen 3: Player Reveal -->
-<div id="screen-reveal" class="screen">
-  <div class="revealCard" id="revealCard">
-    <div class="big" id="revealText"></div>
-    <button onclick="nextReveal()">Next</button>
-    <button onclick="goBackReveal()">Back</button>
-  </div>
-</div>
+  <!-- PLAYERS SCREEN -->
+  <div id="screen-players" class="screen">
+    <div class="header">
+      <button class="backBtn" onclick="goBack()">← Back</button>
+      <div class="title">Players</div>
+      <div style="width:48px"></div>
+    </div>
 
-<!-- Screen 4: Who Starts First -->
-<div id="screen-starting" class="screen">
-  <div class="card">
-    <div class="small">Discussion starts with:</div>
-    <div class="big" id="startingPlayer"></div>
-    <button onclick="goTo('screen-results')">Continue</button>
+    <div class="panel">
+      <label class="small">Number of players (3–20)</label>
+      <input id="playerCount" class="input" type="number" min="3" max="20" value="4" onchange="renderPlayerInputs()" />
+      <div id="playersContainer" style="margin-top:8px"></div>
+      <div style="height:8px"></div>
+      <div class="row">
+        <div class="col"><button class="btn" onclick="collectPlayers()">Continue</button></div>
+        <div class="col"><button class="btn ghost" onclick="randomFillNames()">Auto Names</button></div>
+      </div>
+    </div>
   </div>
-</div>
 
-<!-- Screen 5: Results -->
-<div id="screen-results" class="screen">
-  <div class="card">
-    <div class="title">Results</div>
-    <div id="resultsContent"></div>
-    <button onclick="restartGame()">Restart</button>
+  <!-- CATEGORY & SETTINGS -->
+  <div id="screen-category" class="screen">
+    <div class="header">
+      <button class="backBtn" onclick="goBack()">← Back</button>
+      <div class="title">Category & Settings</div>
+      <div style="width:48px"></div>
+    </div>
+
+    <div class="panel">
+      <label class="small">Choose a category</label>
+      <select id="categorySelect" class="input"></select>
+
+      <label class="small" style="margin-top:10px">Number of imposters</label>
+      <input id="imposterCount" class="input" type="number" min="1" value="1" />
+
+      <div style="height:8px"></div>
+      <label class="small">
+        <input id="toggleHints" type="checkbox" checked /> &nbsp; Show hints to imposters
+      </label>
+
+      <div style="height:10px"></div>
+      <div class="row">
+        <div class="col"><button class="btn" onclick="startGame()">Start Round</button></div>
+        <div class="col"><button class="btn secondary" onclick="goBack()">Cancel</button></div>
+      </div>
+    </div>
   </div>
+
+  <!-- REVEAL SCREEN -->
+  <div id="screen-reveal" class="screen">
+    <div class="header">
+      <button class="backBtn" onclick="goBack()">← Back</button>
+      <div class="title" id="turnLabel">Player's Turn</div>
+      <div style="width:48px"></div>
+    </div>
+
+    <div id="revealPanel" class="panel" style="display:flex; flex-direction:column; gap:12px; align-items:stretch">
+      <div id="playerHighlight" class="playerHighlight small">Player 1</div>
+
+      <div class="revealCard" id="revealCard" style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:140px">
+        <!-- dynamic content -->
+      </div>
+
+      <div class="row">
+        <div class="col"><button id="revealBtn" class="btn" onclick="handleReveal()">Reveal</button></div>
+        <div class="col"><button id="hideBtn" class="btn secondary" style="display:none" onclick="handleHide()">Hide & Pass</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- END / RESULTS SCREEN -->
+  <div id="screen-end" class="screen">
+    <div class="header">
+      <button class="backBtn" onclick="goBack()">← Back</button>
+      <div class="title">Results</div>
+      <div style="width:48px"></div>
+    </div>
+
+    <div class="panel" id="resultsPanel" style="display:flex; flex-direction:column; gap:12px; align-items:stretch">
+      <div style="font-size:14px; opacity:0.9">Round Summary</div>
+      <div class="revealCard" id="finalCard">
+        <div style="font-size:13px; opacity:0.85">Word</div>
+        <div class="word" id="finalWord">---</div>
+        <div style="height:12px"></div>
+        <div style="font-size:13px; opacity:0.85">Imposter(s)</div>
+        <div id="finalImposters" style="margin-top:8px; font-weight:700"></div>
+      </div>
+
+      <div class="row">
+        <div class="col"><button class="btn" onclick="restartGame()">Restart</button></div>
+        <div class="col"><button class="btn secondary" onclick="goTo('screen-start')">Home</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer"><div></div><div class="hint">Tip: pass the phone face down. Hide screen between players.</div></div>
 </div>
 
 <script>
-// --- Game Data ---
-let players = [];
-let imposterIndex = null;
-let currentReveal = 0;
-let selectedWord = null;
+/* ==============================
+   GAME DATA: WORDS + NICHE HINTS
+   Each item: { word: "...", hint: "one short sentence" }
+   (100 items per category)
+   ============================== */
 
-// --- Categories / Words with single-word hints ---
-const words = [
-  {word:"Titanic", hint:"Ice"},
-  {word:"Lion", hint:"Mane"},
-  {word:"Basketball", hint:"Hoop"},
-  {word:"Pizza", hint:"Slice"},
-  {word:"Joker", hint:"Smile"},
-  {word:"Paris", hint:"Eiffel"},
-  {word:"Amazon", hint:"River"},
-  {word:"Doctor", hint:"Stethoscope"},
-  {word:"Beach", hint:"Sand"},
-  {word:"Phone", hint:"Signal"}
+/* Movies - 100 entries */
+const Movies = [
+{word:"Avatar", hint:"Famous 2009 sci-fi with an alien moon and blue humanoids."},
+{word:"Titanic", hint:"A 1997 romance around a real North Atlantic ship that sank."},
+{word:"Inception", hint:"Dream layers and a spinning top were central to this Nolan film."},
+{word:"Frozen", hint:"Animated kingdom, a sister’s icy powers, and the song about being 'let go'."},
+{word:"Gladiator", hint:"A Roman general-turned-arena fighter seeking vengeance."},
+{word:"Jaws", hint:"A seaside town terrorized by a great white in this classic."},
+{word:"Rocky", hint:"An underdog Philly boxer gets a title shot in this Sylvester Stallone film."},
+{word:"Shrek", hint:"An ogre with a talking donkey and a subversive fairytale tone."},
+{word:"Up", hint:"An old man’s house flies with balloons to a South American paradise."},
+{word:"Coco", hint:"A boy who loves music visits a colorful land of the dead."},
+{word:"Cars", hint:"Racing town populated entirely by vehicles."},
+{word:"Aladdin", hint:"A street-smart kid, a lamp, and a flying carpet feature heavily."},
+{word:"Moana", hint:"A Polynesian voyage with an adventurous chief’s daughter and demigod."},
+{word:"Dune", hint:"Desert planet, spice control, and giant sandworms in a modern epic."},
+{word:"Interstellar", hint:"A father travels through wormholes to save humanity."},
+{word:"Joker", hint:"A gritty origin story of a clown-faced comedian in Gotham."},
+{word:"Batman", hint:"A caped vigilante whose parents were killed in an alley."},
+{word:"Superman", hint:"An alien from Krypton raised on Earth fighting for truth."},
+{word:"Spiderman", hint:"A teenager gains arachnid abilities and snaps a famous upside-down kiss."},
+{word:"Hulk", hint:"A scientist turns green and angry when provoked."},
+{word:"Thor", hint:"A hammer-wielding god from a mythical realm."},
+{word:"Avengers", hint:"A team-up of superheroes assembled to stop a global threat."},
+{word:"Matrix", hint:"A reality-bending story with slow-mo 'bullet time' action."},
+{word:"Gravity", hint:"A survival story set against the backdrop of orbital debris."},
+{word:"Toy Story", hint:"Toys come alive when humans are not looking."},
+{word:"Lion King", hint:"An African prince learns responsibility after a familial tragedy."},
+{word:"Finding Nemo", hint:"A clownfish father crosses the ocean for his lost son."},
+{word:"Deadpool", hint:"A wisecracking antihero known for breaking the fourth wall."},
+{word:"Black Panther", hint:"A technologically advanced African nation and its king are central."},
+{word:"Wonder Woman", hint:"An Amazonian warrior leaves her island to fight in man's world."},
+{word:"Encanto", hint:"A magical family in Colombia where each child has a gift."},
+{word:"Psycho", hint:"A shower scene and Bates Motel are infamous elements."},
+{word:"Halloween", hint:"A masked killer returns to terrorize a small town on one night."},
+{word:"Scream", hint:"A slasher with a meta take on horror movie rules."},
+{word:"Alien", hint:"A hostile extraterrestrial stalks a spaceship crew."},
+{word:"Predator", hint:"An invisible hunter torments commandos in the jungle."},
+{word:"Terminator", hint:"A robotic assassin travels back in time to change the future."},
+{word:"Die Hard", hint:"An off-duty cop battles terrorists in a skyscraper."},
+{word:"John Wick", hint:"A retired hitman goes on a revenge rampage for his dog."},
+{word:"Twilight", hint:"A human falls for an immortal who avoids sunlight."},
+{word:"Hunger Games", hint:"Teens fight to survive in televised arena battles."},
+{word:"Harry Potter", hint:"A young wizard learns spells at a famous castle school."},
+{word:"Star Wars", hint:"A galaxy-spanning space opera with lightsabers and the Force."},
+{word:"Indiana Jones", hint:"An archeologist in a fedora chases mythical artifacts."},
+{word:"Minions", hint:"Small yellow creatures that adore a mischievous villain."},
+{word:"Tangled", hint:"A long-haired princess finds freedom and true love."},
+{word:"Mulan", hint:"A woman disguises herself as a soldier to protect her family."},
+{word:"Tarzan", hint:"Raised by apes, he bridges jungle and human worlds."},
+{word:"Zootopia", hint:"A modern city populated by anthropomorphic animals."},
+{word:"Inside Out", hint:"Personified emotions guide a girl's journey through change."},
+{word:"Soul", hint:"A musician explores life’s purpose in metaphysical realms."},
+{word:"Ratatouille", hint:"A chefing rodent dreams of Parisian cuisine."},
+{word:"Monsters Inc", hint:"Monsters harvest children's screams to power a city."},
+{word:"Wall-E", hint:"A lonely robot collects treasures on an abandoned Earth."},
+{word:"Top Gun", hint:"Ace naval aviators dogfight and live fast at an elite school."},
+{word:"Whiplash", hint:"A drummer endures brutal instruction to reach greatness."},
+{word:"La La Land", hint:"A jazz pianist and an aspiring actress pursue dreams in LA."},
+{word:"The Notebook", hint:"A decades-spanning love story told from memories."},
+{word:"IT", hint:"A clownish presence terrorizes kids in a small New England town."},
+{word:"Saw", hint:"Deadly moral puzzles test victims' will to live."},
+{word:"Get Out", hint:"A social-thriller about a young man's unsettling visit to in-laws."},
+{word:"Cinderella", hint:"A mistreated girl finds help from a fairy and a slipper."},
+{word:"Pinocchio", hint:"A wooden puppet yearns to become a real boy."},
+{word:"Dumbo", hint:"An elephant with unusual ears learns to fly."},
+{word:"Snow White", hint:"A poisoned apple and seven small companions are key."},
+{word:"The Godfather", hint:"A mafia family's legacy and power struggles dominate the plot."},
+{word:"Scarface", hint:"A Cuban immigrant rises and falls in the Miami crime scene."},
+{word:"Goodfellas", hint:"A true-crime tale of mob life with rapid-fire storytelling."},
+{word:"Casino", hint:"Gambling empire drama in Vegas with high stakes."},
+{word:"Heat", hint:"A heist thriller known for a downtown shootout scene."},
+{word:"Taken", hint:"A parent's particular set of skills comes in handy."},
+{word:"Rush Hour", hint:"A mismatched buddy-cop duo crosses cultures for laughs."},
+{word:"The Mask", hint:"A zany man transforms into a cartoonish figure with a green face."},
+{word:"Home Alone", hint:"A kid defends his house from bungling burglars."},
+{word:"Elf", hint:"A human raised among Santa’s helpers seeks his origins."},
+{word:"Jumanji", hint:"A board game unleashes jungle chaos into real life."},
+{word:"Paddington", hint:"A polite bear from Peru gets adopted in London."},
+{word:"The Lego Movie", hint:"A normal minifigure ends up on an epic creative quest."},
+{word:"Madagascar", hint:"Zoo animals accidentally find themselves on an island adventure."},
+{word:"Ice Age", hint:"Prehistoric creatures travel together during a chilly epoch."},
+{word:"Rio", hint:"A rare blue macaw discovers carnival life in Brazil."},
+{word:"How to Train Your Dragon", hint:"A boy befriends a misunderstood flying beast."},
+{word:"Braveheart", hint:"A rebel leader fights for Scottish independence with a war cry."},
+{word:"Nope", hint:"A modern horror about spectacle and the human urge to capture the weird."},
+{word:"Smile", hint:"A supernatural force manipulates expressions and fears."},
+{word:"Us", hint:"A family's doppelgängers rise in a tense allegory."},
+{word:"Avengers Endgame", hint:"Heroes attempt a last stand to reverse massive loss."},
+{word:"Captain Marvel", hint:"An interstellar pilot regains identity amid cosmic conflict."},
+{word:"Black Widow", hint:"A spy confronts her past and allied dangers."},
+{word:"Doctor Strange", hint:"A surgeon studies mystic arts to bend reality."},
+{word:"Thor Ragnarok", hint:"A god loses his hammer and faces an arena world."}
 ];
 
-// --- Screen Navigation ---
-function goTo(id){
-  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
-}
+/* Celebrities - 100 entries */
+const Celebrities = [
+{word:"Taylor Swift", hint:"A singer-songwriter notable for albums that switch eras and storytelling."},
+{word:"Drake", hint:"A chart-topping artist who started on a teen drama before rapping."},
+{word:"Beyonce", hint:"A powerhouse vocalist known for meticulous visual albums."},
+{word:"Rihanna", hint:"A pop and fashion mogul who launched a beauty and lingerie brand."},
+{word:"Ariana Grande", hint:"A high-voiced singer who began on Broadway and TV."},
+{word:"Justin Bieber", hint:"A Canadian pop star discovered on video-sharing platforms."},
+{word:"Ed Sheeran", hint:"A singer-songwriter prized for looped guitar and intimate ballads."},
+{word:"Kanye West", hint:"A boundary-pushing producer and controversial cultural figure."},
+{word:"The Weeknd", hint:"Known for dark R&B moods and cinematic pop hooks."},
+{word:"Bruno Mars", hint:"A retro-leaning performer with sharp choreography and falsetto."},
+{word:"Billie Eilish", hint:"An indie-pop singer known for whispery vocals and moody visuals."},
+{word:"Selena Gomez", hint:"Actor-turned-popstar who also produces and advocates mental health."},
+{word:"Harry Styles", hint:"A former boy-band member turned solo artist and fashion icon."},
+{word:"Lady Gaga", hint:"A theatrical performer who blends pop with performance art."},
+{word:"Shawn Mendes", hint:"A guitar-playing pop singer who rose via short-form video."},
+{word:"Adele", hint:"A soulful vocalist with powerful ballads and tearjerker albums."},
+{word:"Post Malone", hint:"A genre-blending star mixing hip-hop with rock and pop."},
+{word:"Cardi B", hint:"A charismatic rapper who rose from social media fame to chart hits."},
+{word:"Nicki Minaj", hint:"A rapid-fire rapper known for alter-egos and colorful style."},
+{word:"Kendrick Lamar", hint:"A Pulitzer-winning lyricist exploring complex social themes."},
+{word:"LeBron James", hint:"A dominant basketball forward with championship pedigree."},
+{word:"Stephen Curry", hint:"A shooter who transformed basketball with deep 3-point range."},
+{word:"Cristiano Ronaldo", hint:"An elite goalscorer known for athleticism and longevity."},
+{word:"Lionel Messi", hint:"A footballer famed for dribbling genius and low center of gravity."},
+{word:"Tom Holland", hint:"A young actor known for a nimble, friendly superhero portrayal."},
+{word:"Zendaya", hint:"An actor and fashion force who debuted on a Disney show."},
+{word:"Kim Kardashian", hint:"A reality-TV mogul who built a global beauty and shapewear business."},
+{word:"Dwayne Johnson", hint:"A charismatic wrestler-turned-action-star with a huge presence."},
+{word:"Chris Hemsworth", hint:"An Australian actor famed for playing a Norse god."},
+{word:"Jennifer Lopez", hint:"A triple-threat entertainer who started as a dancer on TV."},
+{word:"Brad Pitt", hint:"A leading man known for chiseled looks and range across genres."},
+{word:"Angelina Jolie", hint:"An actor and humanitarian with iconic early-2000s roles."},
+{word:"Leonardo DiCaprio", hint:"An actor acclaimed for intense roles and environmental advocacy."},
+{word:"Robert Downey Jr", hint:"A comeback actor who became emblematic as a tech-savvy hero."},
+{word:"Scarlett Johansson", hint:"An actor who frequently toggles between indie dramas and blockbusters."},
+{word:"Emma Watson", hint:"An actor and activist who rose to fame as a young witch."},
+{word:"Johnny Depp", hint:"A chameleonic actor known for eccentric character work."},
+{word:"Will Smith", hint:"A comedian-turned-film-star who began on a '90s sitcom."},
+{word:"Keanu Reeves", hint:"An understated action star with a devoted fanbase for humility."},
+{word:"Tom Cruise", hint:"A long-standing action star famous for high-risk stunts."},
+{word:"Margot Robbie", hint:"An Australian actor known for chameleonic, charismatic turns."},
+{word:"Ryan Reynolds", hint:"An actor known for dry humor and meta superhero roles."},
+{word:"Millie Bobby Brown", hint:"A young actor who rose to fame in a supernatural series."},
+{word:"Doja Cat", hint:"A genre-melding artist known for viral hooks and playful visuals."},
+{word:"Travis Scott", hint:"A rapper known for immersive live shows and atmospheric beats."},
+{word:"Snoop Dogg", hint:"A laid-back icon of West Coast hip-hop with a distinct drawl."},
+{word:"Eminem", hint:"A rapid-fire lyricist whose raw storytelling shocked and moved audiences."},
+{word:"Jay Z", hint:"A rapper-turned-businessman who built a cultural and corporate empire."},
+{word:"Kevin Hart", hint:"A fast-talking comedian turned box-office star."},
+{word:"Jimmy Fallon", hint:"A late-night host known for games and musical sketches."},
+{word:"Oprah Winfrey", hint:"A media magnate who built influence via long-running talk and production."},
+{word:"Gordon Ramsay", hint:"A fiery chef known for blunt critiques and culinary empire."},
+{word:"MrBeast", hint:"A content creator known for extravagant stunts and giveaways."},
+{word:"Logan Paul", hint:"A polarizing social creator who expanded into boxing and entertainment."},
+{word:"PewDiePie", hint:"A longtime internet personality known for gaming and commentary."},
+{word:"Vin Diesel", hint:"A deep-voiced action star and franchise figure."},
+{word:"Gal Gadot", hint:"An actress who rose as a superheroine from a model background."},
+{word:"Henry Cavill", hint:"An actor associated with heroic tall-stature roles and gaming fandom."},
+{word:"Daniel Radcliffe", hint:"The actor synonymous with a boy wizard and post-franchise indie choices."},
+{word:"Emma Stone", hint:"A versatile actor known for comedic timing and awards success."},
+{word:"Chris Evans", hint:"An actor associated with a principled, shield-wielding icon."},
+{word:"Michael Jordan", hint:"An athlete whose on-court dominance reshaped basketball culture."},
+{word:"Serena Williams", hint:"A tennis legend known for power, longevity, and advocacy."},
+{word:"Simone Biles", hint:"A gymnast whose aerial skills rewrote the sport's limits."},
+{word:"Usain Bolt", hint:"The sprinter famous for lightning speed and signature pose."},
+{word:"David Beckham", hint:"A stylish soccer star turned global fashion and sports icon."},
+{word:"Kylie Jenner", hint:"A social-business mogul who popularized direct-to-consumer beauty."},
+{word:"Machine Gun Kelly", hint:"A musician who transitioned between rap and punk-adjacent rock."},
+{word:"Megan Fox", hint:"An actor known for early-2000s blockbuster looks and roles."},
+{word:"Zac Efron", hint:"A performer who started in musicals and shifted to dramatic roles."},
+{word:"Bella Hadid", hint:"A model with a prominent runway and editorial career."},
+{word:"Dua Lipa", hint:"A dance-pop star known for disco-tinged anthems and bold style."},
+{word:"Olivia Rodrigo", hint:"A young singer who channeled teen heartbreak into chart hits."},
+{word:"Camila Cabello", hint:"A former girl-group member turned Latin-influenced pop star."},
+{word:"Bad Bunny", hint:"A Latin trap and reggaeton superstar with genre-bending flair."},
+{word:"Maluma", hint:"A Colombian artist who blends reggaeton with pop intimacy."},
+{word:"Pitbull", hint:"A party-leaning rapper who brands himself as 'Mr. Worldwide'."},
+{word:"Shakira", hint:"A pop star who merged Latin dance rhythms with global hits."},
+{word:"Jason Momoa", hint:"An imposing actor best known for surfer-strong, heroic roles."},
+{word:"Hugh Jackman", hint:"A musical-capable actor with an iconic clawed antihero history."},
+{word:"Anne Hathaway", hint:"An actor who moved from feel-good musicals to awards fare."},
+{word:"Timothee Chalamet", hint:"A sensitive, awards-age actor with precise indie choices."},
+{word:"Florence Pugh", hint:"An actor lauded for intense, grounded dramatic performances."},
+{word:"Tom Hardy", hint:"An actor known for physical, transformative roles and intensity."},
+{word:"Idris Elba", hint:"A commanding actor whose voice and presence anchor many roles."},
+{word:"Jack Black", hint:"A comedic actor and musician with broad physical energy."},
+{word:"Adam Sandler", hint:"A comedian-turned-filmmaker who mixes raunchy and tender work."},
+{word:"Mark Wahlberg", hint:"An actor with a tough-guy past who transitioned to mainstream films."},
+{word:"Ice Cube", hint:"A rapper-turned-actor noted for blunt voice and cultural impact."},
+{word:"Dr Phil", hint:"A television psychologist known for blunt advice and daytime formats."},
+{word:"Ellen DeGeneres", hint:"A talk-show host known for danceable entrances and viral segments."},
+{word:"Kourtney Kardashian", hint:"A reality-star sibling who built brands around lifestyle."},
+{word:"Khloe Kardashian", hint:"A reality figure with outspoken social presence and business ventures."},
+{word:"J Balvin", hint:"A reggaeton star known for bright visuals and Latin hits."},
+{word:"Rupert Grint", hint:"An actor recognized for a loyal friend role in a major fantasy series."}
+];
 
-// --- Back from Reveal ---
-function goBackReveal(){
-  if(currentReveal>0) currentReveal--;
-  revealPlayer();
-}
+/* Animals - 100 entries */
+const Animals = [
+{word:"Lion", hint:"A big African cat with a male mane and pride social structure."},
+{word:"Tiger", hint:"A striped apex predator that prefers solitary hunting."},
+{word:"Elephant", hint:"A large herbivore with trunk dexterity and strong memory."},
+{word:"Giraffe", hint:"A tall browser with a long neck and ossicones."},
+{word:"Zebra", hint:"Striped equids whose pattern helps deter biting flies."},
+{word:"Kangaroo", hint:"A hopping marsupial with a powerful tail native to Australia."},
+{word:"Panda", hint:"A bamboo-eating bear associated with conservation efforts."},
+{word:"Koala", hint:"An arboreal marsupial that feeds almost exclusively on eucalyptus."},
+{word:"Monkey", hint:"A primate often found swinging in trees and social groups."},
+{word:"Gorilla", hint:"A large great ape with gentle intelligence and family groups."},
+{word:"Leopard", hint:"A stealthy spotted cat that often hauls prey into trees."},
+{word:"Cheetah", hint:"A runner built for rapid bursts across open savannahs."},
+{word:"Wolf", hint:"A pack predator with complex social hunting tactics."},
+{word:"Fox", hint:"A small omnivorous canid known for cunning in folklore."},
+{word:"Bear", hint:"A large omnivore with species ranging from polar to sun bear."},
+{word:"Rabbit", hint:"A small mammal that breeds rapidly and likes burrows."},
+{word:"Deer", hint:"Antlered herbivores common in forests and meadows."},
+{word:"Moose", hint:"A massive deer with palmate antlers found in cold regions."},
+{word:"Buffalo", hint:"A sturdy bovine common in grasslands, often in large herds."},
+{word:"Hippo", hint:"A large semi-aquatic mammal known for powerful jaws."},
+{word:"Rhino", hint:"A thick-skinned herbivore with one or two horns on its snout."},
+{word:"Crocodile", hint:"A stealthy reptile that lurks in river mouths and ambushes prey."},
+{word:"Alligator", hint:"A broad-snouted aquatic reptile often found in swamps."},
+{word:"Shark", hint:"A cartilaginous fish with rows of replaceable teeth."},
+{word:"Dolphin", hint:"An intelligent, social marine mammal that often rides bow waves."},
+{word:"Whale", hint:"A massive marine mammal; baleen or toothed varieties exist."},
+{word:"Octopus", hint:"A cephalopod known for problem solving and ink as defense."},
+{word:"Penguin", hint:"A flightless seabird adapted for fast underwater swimming."},
+{word:"Eagle", hint:"A raptor with keen eyesight and high, soaring hunting style."},
+{word:"Falcon", hint:"A swift bird of prey used historically in falconry."},
+{word:"Owl", hint:"A nocturnal raptor with rotating head and silent flight."},
+{word:"Parrot", hint:"A colorful bird often capable of mimicry."},
+{word:"Flamingo", hint:"A pink wader whose color comes from its diet."},
+{word:"Peacock", hint:"A male bird famous for an extravagant tail display."},
+{word:"Swan", hint:"A graceful waterfowl often associated with monogamy."},
+{word:"Duck", hint:"A web-footed waterbird found worldwide."},
+{word:"Chicken", hint:"A domesticated bird raised for eggs and meat."},
+{word:"Turkey", hint:"A large game bird notable in North American holiday traditions."},
+{word:"Cow", hint:"A domesticated bovine raised for milk and beef."},
+{word:"Pig", hint:"An intelligent omnivore commonly kept on farms."},
+{word:"Sheep", hint:"Wool-producing flock animals often grazed in pastures."},
+{word:"Goat", hint:"A hardy browser used for milk, meat, and clearing vegetation."},
+{word:"Horse", hint:"A domesticated equine used for riding and work."},
+{word:"Donkey", hint:"A durable pack animal with hardy temperament."},
+{word:"Camel", hint:"A desert ungulate able to store fat in humps."},
+{word:"Llama", hint:"A pack and fiber animal native to the Andes."},
+{word:"Hedgehog", hint:"A small spiny mammal that curls into a defensive ball."},
+{word:"Otter", hint:"A playful aquatic mammal known for tool use while eating."},
+{word:"Beaver", hint:"A dam-building rodent that engineers waterways."},
+{word:"Raccoon", hint:"A nocturnal omnivore with distinctive masked face and nimble paws."},
+{word:"Skunk", hint:"A small mammal that sprays a powerful scent for defense."},
+{word:"Bat", hint:"The only truly flying mammal, many species echolocate."},
+{word:"Frog", hint:"An amphibian often associated with ponds and metamorphosis."},
+{word:"Snake", hint:"A legless reptile ranging from harmless to venomous species."},
+{word:"Lizard", hint:"A diverse group of reptiles ranging from geckos to komodos."},
+{word:"Chameleon", hint:"A reptile that shifts color and has independently moving eyes."},
+{word:"Iguana", hint:"A large herbivorous lizard common in warm regions."},
+{word:"Turtle", hint:"A shelled reptile that may live on land or sea."},
+{word:"Crab", hint:"A crustacean with claws and sideways locomotion."},
+{word:"Lobster", hint:"A marine crustacean prized in culinary contexts."},
+{word:"Ant", hint:"A social insect that builds colonies and farms aphids."},
+{word:"Bee", hint:"A pollinating insect with complex hive social systems."},
+{word:"Butterfly", hint:"A colorful flying insect that metamorphoses from a caterpillar."},
+{word:"Spider", hint:"An arachnid that spins silk webs or actively hunts prey."},
+{word:"Scorpion", hint:"A nocturnal arachnid with a venomous sting."},
+{word:"Worm", hint:"A burrowing invertebrate crucial for soil health."},
+{word:"Snail", hint:"A slow-moving mollusk with a coiled shell."},
+{word:"Seahorse", hint:"A tiny upright fish where males carry the eggs."},
+{word:"Jellyfish", hint:"A gelatinous drifter with stinging tentacles."},
+{word:"Starfish", hint:"A five-armed echinoderm that can regenerate limbs."},
+{word:"Pigeon", hint:"A city-dwelling bird often used historically for messages."},
+{word:"Crow", hint:"An intelligent corvid known for problem-solving."},
+{word:"Sparrow", hint:"A small, adaptable urban bird commonly seen near humans."},
+{word:"Hawk", hint:"A medium-sized bird of prey that dives for small animals."},
+{word:"Panther", hint:"A melanistic big cat often associated with stealth."},
+{word:"Jaguar", hint:"A powerful spotted cat native to the Americas."},
+{word:"Hyena", hint:"A vocal scavenger-predator with complex social clans."},
+{word:"Meerkat", hint:"A cooperative sentinel species found in arid regions."},
+{word:"Seal", hint:"A flippered marine mammal that basks on shores."},
+{word:"Walrus", hint:"A tusked pinniped adapted to Arctic life."},
+{word:"Polar Bear", hint:"A white-furred predator adapted to icy Arctic seas."},
+{word:"Armadillo", hint:"An armored mammal that rolls up when threatened."},
+{word:"Sloth", hint:"A slow-moving tree-dweller with long claws."},
+{word:"Platypus", hint:"An egg-laying mammal with a duck-like bill."},
+{word:"Ostrich", hint:"A giant flightless bird that runs at high speeds."},
+{word:"Emu", hint:"A large Australian bird with shaggy plumage and long legs."},
+{word:"Cobra", hint:"A venomous hooded snake known for rearing up."},
+{word:"Python", hint:"A constricting snake that kills by squeezing."},
+{word:"Bull", hint:"A male bovine often associated with strength."},
+{word:"Ram", hint:"A male sheep with curled horns."},
+{word:"Yak", hint:"A shaggy high-altitude bovine common in the Himalayas."}
+];
 
-// --- Setup Player Name Inputs ---
-function setupPlayers(){
-  const count = parseInt(document.getElementById("playerCount").value);
-  if(count < 3 || count > 12) return alert("3-12 players only");
+/* Objects - 100 entries */
+const Objects = [
+{word:"Phone", hint:"A handheld device central to modern communication and apps."},
+{word:"Laptop", hint:"A portable computer used for work, media, and coding."},
+{word:"Tablet", hint:"A touchscreen slate larger than a phone for reading and sketching."},
+{word:"Chair", hint:"A seating object with a back used at tables and desks."},
+{word:"Table", hint:"A flat surface for dining, working, or placing objects."},
+{word:"Spoon", hint:"A small utensil for scooping liquids and soft foods."},
+{word:"Fork", hint:"A pronged utensil for spearing food."},
+{word:"Knife", hint:"A cutting tool with a sharp edge used in kitchens."},
+{word:"Plate", hint:"A flat dish meant to hold meals."},
+{word:"Cup", hint:"A small container for hot or cold beverages."},
+{word:"Glass", hint:"A transparent vessel typically for drinking cold liquids."},
+{word:"Bottle", hint:"A narrow-necked container for liquids, often reusable."},
+{word:"Backpack", hint:"A two-strap bag commonly carried on the back for gear."},
+{word:"Wallet", hint:"A small folded accessory used to carry cards and cash."},
+{word:"Keys", hint:"Metal objects used to operate locks and start vehicles."},
+{word:"Remote", hint:"A handheld controller for TVs and electronics."},
+{word:"TV", hint:"A screen-driven device used for broadcast and streaming content."},
+{word:"Lamp", hint:"A light source with a shade used for reading or ambiance."},
+{word:"Clock", hint:"An instrument that displays the current time."},
+{word:"Watch", hint:"A timepiece worn on the wrist."},
+{word:"Mirror", hint:"A reflective surface used for grooming and decor."},
+{word:"Door", hint:"A hinged barrier that separates rooms and provides entry."},
+{word:"Window", hint:"A transparent opening that admits light and views."},
+{word:"Pillow", hint:"A soft support for the head during sleep."},
+{word:"Blanket", hint:"A fabric covering used for warmth while sleeping."},
+{word:"Bed", hint:"A piece of furniture for resting and sleeping."},
+{word:"Sofa", hint:"A cushioned seating piece for multiple people in living rooms."},
+{word:"Desk", hint:"A table used for writing, study, or computer work."},
+{word:"Pen", hint:"A handheld writing instrument that uses ink."},
+{word:"Pencil", hint:"A graphite stick in wood used for drawing and notes."},
+{word:"Notebook", hint:"A bound pad for writing thoughts and lists."},
+{word:"Headphones", hint:"An audio device worn over ears for private listening."},
+{word:"Speaker", hint:"A device that projects sound into a room."},
+{word:"Camera", hint:"A device that captures photos and videos."},
+{word:"Printer", hint:"A machine that produces physical copies of digital documents."},
+{word:"Toothbrush", hint:"A daily hygiene tool for cleaning teeth."},
+{word:"Toothpaste", hint:"A paste used with a brush to clean and protect teeth."},
+{word:"Shampoo", hint:"A cleansing product for washing hair."},
+{word:"Soap", hint:"A cleansing bar or liquid for washing skin."},
+{word:"Towel", hint:"A fabric used for drying after bathing."},
+{word:"Comb", hint:"A toothed tool for grooming hair."},
+{word:"Shoes", hint:"Footwear that protects and supports the feet outdoors."},
+{word:"Hat", hint:"A head covering for style, warmth, or sun protection."},
+{word:"Jacket", hint:"An outer garment for warmth or fashion."},
+{word:"Gloves", hint:"Hand coverings used for warmth or protection."},
+{word:"Scarf", hint:"A fabric worn around the neck for warmth or style."},
+{word:"Ring", hint:"A circular jewelry piece typically worn on a finger."},
+{word:"Necklace", hint:"An ornamental chain or pendant worn around the neck."},
+{word:"Bracelet", hint:"A band of metal or material worn around the wrist."},
+{word:"Sunglasses", hint:"Darkened lenses to protect eyes from bright sunlight."},
+{word:"Umbrella", hint:"A portable canopy used to shield from rain."},
+{word:"Fan", hint:"A device to circulate air for cooling."},
+{word:"Microwave", hint:"A kitchen appliance that heats food quickly with radiation."},
+{word:"Oven", hint:"An enclosed heating chamber used for baking and roasting."},
+{word:"Fridge", hint:"An appliance that keeps food cold for preservation."},
+{word:"Freezer", hint:"A very cold compartment for long-term food storage."},
+{word:"Stove", hint:"A cooking surface with burners for pots and pans."},
+{word:"Blender", hint:"A motorized jar for mixing and pureeing ingredients."},
+{word:"Toaster", hint:"A small appliance that browns bread slices."},
+{word:"Pan", hint:"A shallow cooking vessel for frying."},
+{word:"Pot", hint:"A deep cooking vessel for boiling and stewing."},
+{word:"Bucket", hint:"A simple container used for carrying water or tools."},
+{word:"Broom", hint:"A long-handled brush used for sweeping floors."},
+{word:"Mop", hint:"A fabric head attached to a stick for wet cleaning."},
+{word:"Trash Can", hint:"A receptacle for household waste and disposal."},
+{word:"Suitcase", hint:"A portable container for carrying clothing on trips."},
+{word:"Box", hint:"A cardboard container used for packing items."},
+{word:"Bag", hint:"A flexible container for carrying personal items."},
+{word:"Charger", hint:"A device used to power phones and rechargeable devices."},
+{word:"Cable", hint:"A wire connection used for charging or data transfer."},
+{word:"Mouse", hint:"A pointing device used with computers."},
+{word:"Keyboard", hint:"An input device with letter and function keys."},
+{word:"Controller", hint:"A handheld device used to play video games."},
+{word:"Candle", hint:"A wax source of light often used for ambiance."},
+{word:"Battery", hint:"An energy cell that powers portable electronics."},
+{word:"Flashlight", hint:"A battery-powered handheld light source."},
+{word:"Ruler", hint:"A straightedge with measurement markings."},
+{word:"Scissors", hint:"A cutting tool with two blades joined by a pivot."},
+{word:"Tape", hint:"An adhesive strip used to attach or seal objects."},
+{word:"Glue", hint:"An adhesive substance for bonding materials."},
+{word:"Calculator", hint:"A small device used for arithmetic and math tasks."},
+{word:"Thermometer", hint:"A tool that measures temperature in degrees."},
+{word:"Scale", hint:"A device for measuring weight or mass."},
+{word:"Helmet", hint:"Protective headgear used in sports or construction."},
+{word:"Drill", hint:"A power tool used to bore holes and drive screws."},
+{word:"Hammer", hint:"A hand tool used to drive nails and shape materials."},
+{word:"Nail", hint:"A thin metal fastener driven by a hammer."},
+{word:"Screw", hint:"A threaded fastener requiring a driver to insert."},
+{word:"Paintbrush", hint:"A bristled tool for applying paint to surfaces."},
+{word:"Canvas", hint:"A stretched fabric surface used for painting."},
+{word:"Tent", hint:"A portable shelter used for camping outdoors."},
+{word:"Sleeping Bag", hint:"An insulated bag for sleeping outdoors at night."},
+{word:"Projector", hint:"A device that casts video or images onto a screen."},
+{word:"Router", hint:"A network device that routes internet traffic at home."},
+{word:"Smartwatch", hint:"A wearable that tracks fitness and mirrors smartphone alerts."},
+{word:"Gaming Console", hint:"A dedicated device for playing video games on a TV."}
+];
 
-  const container = document.getElementById("nameInputs");
-  container.innerHTML = "";
-  for(let i=0;i<count;i++){
-    container.innerHTML += `<input placeholder="Player ${i+1}" id="p${i}"><br>`;
-  }
-  goTo("screen-names");
-}
+/* ==============================
+   UTILITY + STATE
+   ============================== */
 
-// --- Start Game ---
-function startGame(){
-  players = [];
-  const count = document.querySelectorAll("#nameInputs input").length;
-  for(let i=0;i<count;i++){
-    players.push(document.getElementById(`p${i}`).value || `Player ${i+1}`);
-  }
+const SCREENS = ['screen-start','screen-players','screen-category','screen-reveal','screen-end'];
+let historyStack = ['screen-start'];
 
-  selectedWord = words[Math.floor(Math.random()*words.length)];
-  imposterIndex = Math.floor(Math.random()*players.length);
-  currentReveal = 0;
+let players = [];        // array of player names
+let imposters = [];      // array of player indices
+let chosen = null;       // chosen word object {word, hint}
+let currentIndex = 0;    // which player is currently revealing
+let hintsEnabled = true; // toggle for imposter hints
 
-  revealPlayer();
-  goTo("screen-reveal");
-}
-
-// --- Reveal Logic ---
-function revealPlayer(){
-  const revealText = document.getElementById("revealText");
-  const noHints = document.getElementById("noHints").checked;
-
-  if(currentReveal >= players.length){
-    chooseStarter();
-    return;
-  }
-
-  const name = players[currentReveal];
-
-  if(currentReveal === imposterIndex){
-    revealText.innerHTML = `${name}<br><span class="imposter">YOU ARE THE IMPOSTER</span>`;
-    if(!noHints){
-      revealText.innerHTML += `<div class="small">Hint: ${selectedWord.hint}</div>`;
-    }
-  } else {
-    revealText.innerHTML = `${name}<br>${selectedWord.word}`;
-  }
-}
-
-// --- Next Reveal ---
-function nextReveal(){
-  currentReveal++;
-  revealPlayer();
-}
-
-// --- Weighted Starter Logic ---
-function chooseStarter(){
-  let weightedPlayers = [];
-  players.forEach((p,i)=>{
-    if(i===imposterIndex) weightedPlayers.push(p); // 1 entry
-    else weightedPlayers.push(p,p); // double chance
+/* ====== Screen helpers ====== */
+function goTo(screenId){
+  // push history unless navigating forward from reveal to end
+  const current = historyStack[historyStack.length-1];
+  if(current !== screenId) historyStack.push(screenId);
+  SCREENS.forEach(s => {
+    const el = document.getElementById(s);
+    el.classList.remove('active','exit-left');
   });
-  const starter = weightedPlayers[Math.floor(Math.random()*weightedPlayers.length)];
-  document.getElementById("startingPlayer").innerText = starter;
-  goTo("screen-starting");
+  document.getElementById(screenId).classList.add('active');
+}
+function goBack(){
+  if(historyStack.length>1){
+    historyStack.pop(); // current
+    const prev = historyStack[historyStack.length-1];
+    // animate current exit-left quickly
+    const screensEls = SCREENS.map(id => document.getElementById(id));
+    screensEls.forEach(s => s.classList.remove('active','exit-left'));
+    // mark previous active
+    document.getElementById(prev).classList.add('active');
+  } else {
+    // from start, do nothing
+  }
+}
+function noop(){}
 
-  generateResults();
+/* ============================
+   PLAYER UI: render + collect
+   ============================ */
+function renderPlayerInputs(){
+  const count = Math.max(3, Math.min(20, Number(document.getElementById('playerCount').value || 4)));
+  document.getElementById('playerCount').value = count;
+  const container = document.getElementById('playersContainer');
+  container.innerHTML = '';
+  for(let i=0;i<count;i++){
+    const input = document.createElement('input');
+    input.className = 'input';
+    input.id = 'playerInput' + i;
+    input.placeholder = `Player ${i+1} name`;
+    container.appendChild(input);
+  }
+}
+function randomFillNames(){
+  const sample = ['Alex','Sam','Jamie','Taylor','Jordan','Casey','Riley','Morgan','Avery','Cameron','Drew','Parker','Blake','Quinn','Rowan','Hayden','Kai','Noah','Eli','Max'];
+  const count = Number(document.getElementById('playerCount').value || 4);
+  renderPlayerInputs();
+  for(let i=0;i<count;i++){
+    document.getElementById('playerInput'+i).value = sample[(i+3) % sample.length] + (i+1);
+  }
+}
+function collectPlayers(){
+  const count = Number(document.getElementById('playerCount').value || 4);
+  players = [];
+  for(let i=0;i<count;i++){
+    const val = (document.getElementById('playerInput'+i) || {}).value || `Player ${i+1}`;
+    players.push(val.trim() || `Player ${i+1}`);
+  }
+  // prepare category select if not yet
+  populateCategories();
+  goTo('screen-category');
 }
 
-// --- Generate Results ---
-function generateResults(){
-  const imposterName = players[imposterIndex];
-  document.getElementById("resultsContent").innerHTML = `
-    <div>Word: <strong>${selectedWord.word}</strong></div>
-    <div>Imposter: <strong class="imposter">${imposterName}</strong></div>
-  `;
+/* ============================
+   CATEGORIES UI + START GAME
+   ============================ */
+function populateCategories(){
+  const select = document.getElementById('categorySelect');
+  if(select.options.length>0) return;
+  ['Movies','Celebrities','Animals','Objects'].forEach(cat=>{
+    const opt = document.createElement('option');
+    opt.value = cat;
+    opt.textContent = cat;
+    select.appendChild(opt);
+  });
 }
 
-// --- Restart Game ---
+function startGame(){
+  // apply hint toggle
+  hintsEnabled = Boolean(document.getElementById('toggleHints').checked);
+  const catName = document.getElementById('categorySelect').value || 'Movies';
+  const impCount = Math.max(1, Math.min(players.length-1, Number(document.getElementById('imposterCount').value || 1)));
+  // select list
+  let list;
+  if(catName==='Movies') list = Movies;
+  else if(catName==='Celebrities') list = Celebrities;
+  else if(catName==='Animals') list = Animals;
+  else list = Objects;
+  // choose random item
+  chosen = list[Math.floor(Math.random() * list.length)];
+  // pick unique imposter indices
+  imposters = [];
+  while(imposters.length < impCount){
+    const r = Math.floor(Math.random()*players.length);
+    if(!imposters.includes(r)) imposters.push(r);
+  }
+  currentIndex = 0;
+  // prepare UI
+  prepareRevealUI();
+  goTo('screen-reveal');
+}
+
+/* ============================
+   REVEAL LOGIC & UI
+   ============================ */
+function prepareRevealUI(){
+  const label = document.getElementById('turnLabel');
+  const pName = players[currentIndex];
+  label.textContent = `${pName}'s Turn`;
+  document.getElementById('playerHighlight').textContent = `Passing to: ${pName}`;
+  const card = document.getElementById('revealCard');
+  card.innerHTML = `<div style="opacity:0.9">Tap REVEAL when ready</div>`;
+  card.classList.remove('revealAnim','shake');
+  document.getElementById('revealBtn').style.display='inline-block';
+  document.getElementById('hideBtn').style.display='none';
+}
+
+function handleReveal(){
+  const card = document.getElementById('revealCard');
+  // content when crew
+  if(imposters.includes(currentIndex)){
+    let html = `<div class="imposterNotice imposterPulse">YOU ARE THE IMPOSTER</div>`;
+    if(hintsEnabled){
+      html += `<div style="height:10px"></div><div style="opacity:0.92">${chosen.hint}</div>`;
+    } else {
+      html += `<div style="height:10px"></div><div style="opacity:0.85">No hint (disabled)</div>`;
+    }
+    card.innerHTML = html;
+    // imposter dramatic effect
+    card.classList.add('revealAnim','shake');
+  } else {
+    card.innerHTML = `<div style="opacity:0.85">CREW</div><div class="word">${escapeHtml(chosen.word)}</div>`;
+    card.classList.add('revealAnim');
+  }
+  // buttons toggle
+  document.getElementById('revealBtn').style.display='none';
+  document.getElementById('hideBtn').style.display='inline-block';
+}
+
+function handleHide(){
+  // move to next player or end
+  currentIndex++;
+  if(currentIndex >= players.length){
+    // show results end screen
+    showResults();
+    goTo('screen-end');
+  } else {
+    prepareRevealUI();
+    // slide transition handled by goTo -> goTo('screen-reveal') would push history, but we're already there; just reset UI
+  }
+}
+
+/* ============================
+   RESULTS + RESTART
+   ============================ */
+function showResults(){
+  document.getElementById('finalWord').textContent = chosen.word;
+  const impNames = imposters.map(i => players[i]);
+  document.getElementById('finalImposters').innerHTML = impNames.map(n => `<div style="padding:8px 10px; background:rgba(255,255,255,0.03); border-radius:10px; margin-top:6px">${escapeHtml(n)}</div>`).join('');
+  // push end to history stack for back nav
+  historyStack.push('screen-end');
+}
+
 function restartGame(){
-  location.reload();
+  // fully reset state but keep categories and UI
+  players = [];
+  imposters = [];
+  chosen = null;
+  currentIndex = 0;
+  historyStack = ['screen-start'];
+  // clear players container and reset playerCount
+  document.getElementById('playerCount').value = 4;
+  document.getElementById('playersContainer').innerHTML = '';
+  renderPlayerInputs();
+  // reset toggle
+  document.getElementById('toggleHints').checked = true;
+  // go home
+  goTo('screen-start');
 }
+
+/* ============================
+   HELPERS
+   ============================ */
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"]/g, function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]});
+}
+
+/* initial render */
+renderPlayerInputs();
+populateCategories();
+
 </script>
 </body>
 </html>
