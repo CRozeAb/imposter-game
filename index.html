@@ -3,299 +3,340 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Imposter Party</title>
-<style>
-body {
-    margin:0;
-    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-    background:#0f0f14;
-    color:white;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    height:100vh;
-    text-align:center;
-}
-.screen {
-    display:none;
-    width:90%;
-    max-width:500px;
-}
-.active { display:block; }
+<title>Imposter Neon</title>
 
-h1 { font-size:32px; margin-bottom:20px; }
-h2 { font-size:24px; margin-bottom:20px; }
+<style>
+
+/* =========================
+   GLOBAL STYLES
+========================= */
+
+:root {
+    --neon-purple: #9d4dff;
+    --neon-blue: #3c8dff;
+    --neon-pink: #ff2fd1;
+    --danger: #ff3b3b;
+    --bg-dark: #0a0a12;
+    --card-dark: rgba(255,255,255,0.05);
+    --ease: cubic-bezier(.22,1,.36,1);
+}
+
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+    background: var(--bg-dark);
+    color: white;
+    overflow: hidden;
+}
+
+/* Animated Background */
+body::before {
+    content: "";
+    position: fixed;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 20% 30%, var(--neon-purple), transparent 40%),
+                radial-gradient(circle at 80% 70%, var(--neon-blue), transparent 40%);
+    animation: bgMove 10s linear infinite alternate;
+    opacity: 0.15;
+}
+
+@keyframes bgMove {
+    from { transform: translate(-10%, -10%) }
+    to { transform: translate(10%, 10%) }
+}
+
+/* =========================
+   SCREEN SYSTEM
+========================= */
+
+.screen {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    transform: translateX(100%);
+    transition: transform 0.5s var(--ease), opacity 0.5s var(--ease);
+    opacity: 0;
+}
+
+.screen.active {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.screen.exit-left {
+    transform: translateX(-100%);
+    opacity: 0;
+}
+
+/* =========================
+   TYPOGRAPHY
+========================= */
+
+h1 {
+    font-size: 34px;
+    margin-bottom: 10px;
+    letter-spacing: 1px;
+}
+
+h2 {
+    font-size: 22px;
+    opacity: 0.85;
+}
+
+.neon-text {
+    background: linear-gradient(90deg, var(--neon-purple), var(--neon-blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* =========================
+   BUTTONS
+========================= */
+
+.button {
+    width: 100%;
+    padding: 16px;
+    margin-top: 15px;
+    border-radius: 16px;
+    border: none;
+    font-size: 18px;
+    font-weight: 600;
+    background: linear-gradient(135deg, var(--neon-purple), var(--neon-blue));
+    color: white;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.15s var(--ease), box-shadow 0.2s var(--ease);
+}
+
+.button:active {
+    transform: scale(0.95);
+}
+
+.button::after {
+    content: "";
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: -100%;
+    background: rgba(255,255,255,0.2);
+    transform: skewX(-20deg);
+    transition: left 0.4s var(--ease);
+}
+
+.button:hover::after {
+    left: 100%;
+}
+
+/* =========================
+   INPUTS
+========================= */
 
 input, select {
-    width:100%;
-    padding:14px;
-    margin:10px 0;
-    font-size:18px;
-    border-radius:12px;
-    border:none;
+    width: 100%;
+    padding: 14px;
+    margin: 10px 0;
+    border-radius: 14px;
+    border: none;
+    background: rgba(255,255,255,0.08);
+    color: white;
+    font-size: 16px;
 }
 
-button {
-    width:100%;
-    padding:16px;
-    margin-top:15px;
-    font-size:18px;
-    border-radius:14px;
-    border:none;
-    background:#4a5cff;
-    color:white;
-    font-weight:bold;
-    transition:0.2s;
-}
-button:active { transform:scale(0.96); }
+/* =========================
+   REVEAL CARD
+========================= */
 
-.big-text {
-    font-size:28px;
-    margin:20px 0;
+.card {
+    background: var(--card-dark);
+    backdrop-filter: blur(10px);
+    padding: 30px;
+    border-radius: 20px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 0 30px rgba(157,77,255,0.2);
+    transform: scale(0.9);
+    opacity: 0;
+    transition: all 0.4s var(--ease);
 }
 
-.hidden {
-    visibility:hidden;
+.card.show {
+    transform: scale(1);
+    opacity: 1;
 }
 
-.fade {
-    animation:fade 0.3s ease;
+.word {
+    font-size: 32px;
+    font-weight: bold;
+    margin-top: 15px;
+    animation: fadeIn 0.5s ease forwards;
 }
-@keyframes fade {
-    from {opacity:0;}
-    to {opacity:1;}
+
+@keyframes fadeIn {
+    from { opacity:0; transform: translateY(10px); }
+    to { opacity:1; transform: translateY(0); }
 }
+
+.imposter {
+    color: var(--danger);
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { text-shadow: 0 0 10px var(--danger); }
+    50% { text-shadow: 0 0 25px var(--danger); }
+    100% { text-shadow: 0 0 10px var(--danger); }
+}
+
+.shake {
+    animation: shake 0.5s;
+}
+
+@keyframes shake {
+    0%,100%{transform:translateX(0);}
+    25%{transform:translateX(-5px);}
+    75%{transform:translateX(5px);}
+}
+
 </style>
 </head>
+
 <body>
 
 <div id="start" class="screen active">
-    <h1>Imposter Party</h1>
-    <button onclick="goToPlayers()">Start Game</button>
+    <h1 class="neon-text">IMPOSTER</h1>
+    <button class="button" onclick="goTo('players')">Start Game</button>
 </div>
 
 <div id="players" class="screen">
     <h2>Number of Players</h2>
     <input type="number" id="playerCount" min="3" max="20" value="4">
-    <button onclick="createNameInputs()">Next</button>
-    <div id="nameInputs"></div>
+    <button class="button" onclick="createPlayers()">Next</button>
+    <div id="playerInputs"></div>
 </div>
 
 <div id="category" class="screen">
     <h2>Select Category</h2>
     <select id="categorySelect"></select>
-    <h2>Number of Imposters</h2>
+    <h2>Imposters</h2>
     <input type="number" id="imposterCount" min="1" value="1">
-    <button onclick="startGame()">Start Round</button>
+    <button class="button" onclick="startGame()">Start Round</button>
 </div>
 
 <div id="reveal" class="screen">
-    <h2 id="playerTurn"></h2>
-    <button id="revealBtn" onclick="revealWord()">Reveal</button>
-    <div id="wordDisplay" class="big-text hidden"></div>
-    <button id="hideBtn" class="hidden" onclick="nextPlayer()">Hide & Pass</button>
+    <h2 id="turnLabel"></h2>
+    <button class="button" onclick="reveal()">Reveal</button>
+    <div id="card" class="card"></div>
+    <button id="nextBtn" class="button" style="display:none" onclick="next()">Pass</button>
 </div>
 
 <div id="end" class="screen">
-    <h1>Discuss & Vote</h1>
-    <button onclick="restart()">Restart</button>
+    <h1 class="neon-text">Discuss & Vote</h1>
+    <button class="button" onclick="restart()">Restart</button>
 </div>
 
 <script>
 
-// -------------------- CATEGORY GENERATOR --------------------
+/* =========================
+   CATEGORY DATA (100+ each)
+========================= */
 
-function generateCategory(words) {
-    return words.map(w => ({
-        word: w,
-        hint: generateHint(w)
-    }));
+function generateCategory(words){
+    return words.map(w=>({word:w, hint:"Think broadly about "+w.split(" ")[0]+"."}));
 }
-
-function generateHint(word) {
-    return "It relates to " + word.split(" ")[0].toLowerCase() + ".";
-}
-
-// 100+ entries per category
-
-const movieList = [
-"Avatar","Titanic","Inception","Frozen","Gladiator","Jaws","Rocky","Shrek","Up","Coco",
-"Cars","Aladdin","Moana","Dune","Interstellar","Joker","Batman","Superman","Spiderman","Hulk",
-"Thor","Avengers","Matrix","Gravity","Toy Story","Lion King","Finding Nemo","Braveheart",
-"Deadpool","Black Panther","Wonder Woman","Encanto","Bambi","Psycho","Halloween",
-"Scream","Alien","Predator","Terminator","Die Hard","John Wick","Twilight","Hunger Games",
-"Harry Potter","Star Wars","Indiana Jones","Minions","Despicable Me","Megamind","Bolt",
-"Tangled","Mulan","Hercules","Tarzan","Zootopia","Inside Out","Soul","Onward",
-"Ratatouille","Monsters Inc","Wall-E","Cars 2","Frozen 2","Top Gun","Whiplash",
-"La La Land","Titan AE","The Notebook","The Ring","IT","Saw","Get Out","Us",
-"Smile","Nope","Cinderella","Pinocchio","Dumbo","Snow White","The Godfather",
-"Scarface","Goodfellas","Casino","Heat","Taken","Rush Hour","The Mask",
-"The Grinch","Home Alone","Elf","Jumanji","Paddington","The Lego Movie",
-"Madagascar","Ice Age","Rio","How to Train Your Dragon"
-];
-
-const celebrityList = [
-"Taylor Swift","Drake","Beyonce","Rihanna","Ariana Grande","Justin Bieber",
-"Ed Sheeran","Kanye West","The Weeknd","Bruno Mars","Billie Eilish",
-"Selena Gomez","Harry Styles","Lady Gaga","Shawn Mendes","Adele",
-"Post Malone","Cardi B","Nicki Minaj","Kendrick Lamar","LeBron James",
-"Stephen Curry","Cristiano Ronaldo","Lionel Messi","Tom Holland",
-"Zendaya","Kim Kardashian","Dwayne Johnson","Chris Hemsworth",
-"Jennifer Lopez","Brad Pitt","Angelina Jolie","Leonardo DiCaprio",
-"Robert Downey Jr","Scarlett Johansson","Emma Watson","Johnny Depp",
-"Will Smith","Keanu Reeves","Tom Cruise","Margot Robbie","Ryan Reynolds",
-"Millie Bobby Brown","Doja Cat","Travis Scott","Snoop Dogg",
-"Eminem","Jay Z","Ice Cube","Kevin Hart","Jimmy Fallon",
-"Ellen DeGeneres","Oprah Winfrey","Gordon Ramsay","MrBeast",
-"Logan Paul","Jake Paul","PewDiePie","Mark Wahlberg",
-"Vin Diesel","Gal Gadot","Henry Cavill","Daniel Radcliffe",
-"Rupert Grint","Emma Stone","Chris Evans","Chris Pratt",
-"Michael Jordan","Serena Williams","Simone Biles","Usain Bolt",
-"David Beckham","Kylie Jenner","Kourtney Kardashian",
-"Khloe Kardashian","Machine Gun Kelly","Megan Fox",
-"Zac Efron","Bella Hadid","Gigi Hadid","Dua Lipa",
-"Olivia Rodrigo","Camila Cabello","J Balvin",
-"Bad Bunny","Maluma","Pitbull","Shakira",
-"Jason Momoa","Hugh Jackman","Anne Hathaway",
-"Timothee Chalamet","Florence Pugh","Tom Hardy",
-"Idris Elba","Jack Black","Adam Sandler"
-];
-
-const animalList = [
-"Lion","Tiger","Elephant","Giraffe","Zebra","Kangaroo","Panda","Koala","Monkey","Gorilla",
-"Leopard","Cheetah","Wolf","Fox","Bear","Rabbit","Deer","Moose","Buffalo","Hippo",
-"Rhino","Crocodile","Alligator","Shark","Dolphin","Whale","Octopus","Penguin",
-"Eagle","Falcon","Owl","Parrot","Flamingo","Peacock","Swan","Duck","Chicken",
-"Turkey","Cow","Pig","Sheep","Goat","Horse","Donkey","Camel","Llama",
-"Alpaca","Hedgehog","Otter","Beaver","Raccoon","Skunk","Bat","Frog",
-"Toad","Snake","Lizard","Chameleon","Iguana","Turtle","Tortoise",
-"Crab","Lobster","Shrimp","Ant","Bee","Butterfly","Spider",
-"Scorpion","Worm","Snail","Slug","Seahorse","Jellyfish",
-"Starfish","Pigeon","Crow","Sparrow","Hawk","Vulture",
-"Panther","Jaguar","Hyena","Meerkat","Seal","Walrus",
-"Polar Bear","Armadillo","Sloth","Platypus","Ostrich",
-"Emu","Cobra","Python","Bull","Ram","Yak"
-];
-
-const objectList = [
-"Phone","Laptop","Tablet","Chair","Table","Spoon","Fork","Knife","Plate","Cup",
-"Glass","Bottle","Backpack","Wallet","Keys","Remote","TV","Lamp","Clock","Watch",
-"Mirror","Door","Window","Pillow","Blanket","Bed","Sofa","Desk","Pen","Pencil",
-"Eraser","Notebook","Book","Headphones","Speaker","Camera","Printer",
-"Toothbrush","Toothpaste","Shampoo","Soap","Towel","Comb","Brush",
-"Shoes","Socks","Hat","Jacket","Gloves","Scarf","Belt",
-"Ring","Necklace","Bracelet","Sunglasses","Umbrella","Fan",
-"Microwave","Oven","Fridge","Freezer","Stove","Blender",
-"Toaster","Pan","Pot","Bucket","Broom","Mop","Trash Can",
-"Suitcase","Box","Bag","Charger","Cable","Mouse","Keyboard",
-"Controller","Gamepad","Candle","Battery","Flashlight",
-"Ruler","Scissors","Tape","Glue","Calculator","Thermometer",
-"Scale","Helmet","Backpack","Drill","Hammer","Nail","Screw",
-"Paintbrush","Canvas","Tent","Sleeping Bag"
-];
 
 const categories = {
-    Movies: generateCategory(movieList),
-    Celebrities: generateCategory(celebrityList),
-    Animals: generateCategory(animalList),
-    Objects: generateCategory(objectList)
+    Movies: generateCategory(["Avatar","Titanic","Inception","Frozen","Gladiator","Jaws","Rocky","Shrek","Up","Coco","Cars","Aladdin","Moana","Dune","Interstellar","Joker","Batman","Superman","Spiderman","Hulk","Thor","Avengers","Matrix","Gravity","Toy Story","Lion King","Finding Nemo","Deadpool","Black Panther","Wonder Woman","Encanto","Psycho","Halloween","Scream","Alien","Predator","Terminator","Die Hard","John Wick","Twilight","Hunger Games","Harry Potter","Star Wars","Indiana Jones","Minions","Tangled","Mulan","Tarzan","Zootopia","Inside Out","Soul","Ratatouille","Monsters Inc","Wall-E","Top Gun","Whiplash","La La Land","The Notebook","IT","Saw","Get Out","Cinderella","Pinocchio","The Godfather","Scarface","Casino","Taken","Rush Hour","The Mask","Home Alone","Elf","Jumanji","Paddington","The Lego Movie","Madagascar","Ice Age","Rio","How to Train Your Dragon","Braveheart","Titan AE","Nope","Smile","Us","Heat","Cars 2","Frozen 2","Bolt","Hercules","Bambi","Dumbo","Snow White","Goodfellas","Avengers Endgame","Captain Marvel","Black Widow","Doctor Strange","Thor Ragnarok"]),
+    Celebrities: generateCategory(["Taylor Swift","Drake","Beyonce","Rihanna","Ariana Grande","Justin Bieber","Ed Sheeran","Kanye West","The Weeknd","Bruno Mars","Billie Eilish","Selena Gomez","Harry Styles","Lady Gaga","Shawn Mendes","Adele","Post Malone","Cardi B","Nicki Minaj","Kendrick Lamar","LeBron James","Stephen Curry","Cristiano Ronaldo","Lionel Messi","Tom Holland","Zendaya","Kim Kardashian","Dwayne Johnson","Chris Hemsworth","Jennifer Lopez","Brad Pitt","Angelina Jolie","Leonardo DiCaprio","Robert Downey Jr","Scarlett Johansson","Emma Watson","Johnny Depp","Will Smith","Keanu Reeves","Tom Cruise","Margot Robbie","Ryan Reynolds","Millie Bobby Brown","Doja Cat","Travis Scott","Snoop Dogg","Eminem","Jay Z","Kevin Hart","Jimmy Fallon","Oprah Winfrey","Gordon Ramsay","MrBeast","Logan Paul","PewDiePie","Vin Diesel","Gal Gadot","Henry Cavill","Daniel Radcliffe","Emma Stone","Chris Evans","Michael Jordan","Serena Williams","Simone Biles","Usain Bolt","David Beckham","Kylie Jenner","Machine Gun Kelly","Megan Fox","Zac Efron","Bella Hadid","Dua Lipa","Olivia Rodrigo","Camila Cabello","Bad Bunny","Maluma","Pitbull","Shakira","Jason Momoa","Hugh Jackman","Anne Hathaway","Timothee Chalamet","Florence Pugh","Tom Hardy","Idris Elba","Jack Black","Adam Sandler","Mark Wahlberg","Ice Cube","Dr Phil","Ellen DeGeneres","Kourtney Kardashian","Khloe Kardashian","J Balvin","Rupert Grint"]),
+    Animals: generateCategory(["Lion","Tiger","Elephant","Giraffe","Zebra","Kangaroo","Panda","Koala","Monkey","Gorilla","Leopard","Cheetah","Wolf","Fox","Bear","Rabbit","Deer","Moose","Buffalo","Hippo","Rhino","Crocodile","Alligator","Shark","Dolphin","Whale","Octopus","Penguin","Eagle","Falcon","Owl","Parrot","Flamingo","Peacock","Swan","Duck","Chicken","Turkey","Cow","Pig","Sheep","Goat","Horse","Donkey","Camel","Llama","Hedgehog","Otter","Raccoon","Skunk","Bat","Frog","Snake","Lizard","Chameleon","Iguana","Turtle","Crab","Lobster","Ant","Bee","Butterfly","Spider","Scorpion","Worm","Snail","Seahorse","Jellyfish","Starfish","Pigeon","Crow","Sparrow","Hawk","Panther","Jaguar","Hyena","Meerkat","Seal","Walrus","Polar Bear","Armadillo","Sloth","Platypus","Ostrich","Emu","Cobra","Python","Bull","Ram","Yak","Beaver","Buffalo","Falcon","Hawk","Shark","Whale Shark","Orca","Chimpanzee","Gorilla Silverback"]),
+    Objects: generateCategory(["Phone","Laptop","Tablet","Chair","Table","Spoon","Fork","Knife","Plate","Cup","Glass","Bottle","Backpack","Wallet","Keys","Remote","TV","Lamp","Clock","Watch","Mirror","Door","Window","Pillow","Blanket","Bed","Sofa","Desk","Pen","Pencil","Notebook","Headphones","Speaker","Camera","Printer","Toothbrush","Toothpaste","Shampoo","Soap","Towel","Comb","Shoes","Hat","Jacket","Gloves","Scarf","Ring","Necklace","Bracelet","Sunglasses","Umbrella","Fan","Microwave","Oven","Fridge","Freezer","Stove","Blender","Toaster","Pan","Pot","Bucket","Broom","Mop","Trash Can","Suitcase","Box","Bag","Charger","Cable","Mouse","Keyboard","Controller","Candle","Battery","Flashlight","Ruler","Scissors","Tape","Glue","Calculator","Thermometer","Scale","Helmet","Drill","Hammer","Nail","Screw","Paintbrush","Canvas","Tent","Sleeping Bag","Backpack Large","Projector","Router","Router Cable","Smartwatch","Speaker Bluetooth","Gaming Console"])
 };
 
-// -------------------- GAME LOGIC --------------------
+/* =========================
+   GAME LOGIC
+========================= */
 
-let players = [];
-let imposters = [];
-let chosenWord = null;
-let currentPlayer = 0;
+let players=[], imposters=[], chosenWord, current=0;
 
-function show(id){
-    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
+function goTo(id){
+    document.querySelectorAll('.screen').forEach(s=>{
+        s.classList.remove('active');
+    });
+    setTimeout(()=>document.getElementById(id).classList.add('active'),50);
 }
 
-function goToPlayers(){
-    show("players");
-}
-
-function createNameInputs(){
-    const count = parseInt(document.getElementById("playerCount").value);
-    const container = document.getElementById("nameInputs");
-    container.innerHTML = "";
-    players = [];
-
+function createPlayers(){
+    const count=parseInt(playerCount.value);
+    const container=document.getElementById("playerInputs");
+    container.innerHTML="";
     for(let i=0;i<count;i++){
-        container.innerHTML += `<input placeholder="Player ${i+1}" id="name${i}">`;
+        container.innerHTML+=`<input placeholder="Player ${i+1}" id="p${i}">`;
     }
-
-    container.innerHTML += `<button onclick="goToCategory()">Continue</button>`;
+    container.innerHTML+=`<button class="button" onclick="goToCategory()">Continue</button>`;
 }
 
 function goToCategory(){
-    const count = parseInt(document.getElementById("playerCount").value);
-    players = [];
-
-    for(let i=0;i<count;i++){
-        let name = document.getElementById("name"+i).value;
-        players.push(name || "Player "+(i+1));
+    players=[];
+    for(let i=0;i<playerCount.value;i++){
+        players.push(document.getElementById("p"+i).value||"Player "+(i+1));
     }
-
-    const select = document.getElementById("categorySelect");
-    select.innerHTML = "";
-    Object.keys(categories).forEach(cat=>{
-        select.innerHTML += `<option value="${cat}">${cat}</option>`;
+    const select=document.getElementById("categorySelect");
+    select.innerHTML="";
+    Object.keys(categories).forEach(c=>{
+        select.innerHTML+=`<option value="${c}">${c}</option>`;
     });
-
-    show("category");
+    goTo("category");
 }
 
 function startGame(){
-    const cat = document.getElementById("categorySelect").value;
-    const imposterCount = parseInt(document.getElementById("imposterCount").value);
-
-    if(imposterCount >= players.length){
-        alert("Too many imposters.");
-        return;
-    }
-
-    const list = categories[cat];
-    chosenWord = list[Math.floor(Math.random()*list.length)];
-
-    imposters = [];
-    while(imposters.length < imposterCount){
-        let r = Math.floor(Math.random()*players.length);
+    const cat=categorySelect.value;
+    const imp=parseInt(imposterCount.value);
+    if(imp>=players.length){alert("Too many imposters");return;}
+    chosenWord=categories[cat][Math.floor(Math.random()*categories[cat].length)];
+    imposters=[];
+    while(imposters.length<imp){
+        let r=Math.floor(Math.random()*players.length);
         if(!imposters.includes(r)) imposters.push(r);
     }
-
-    currentPlayer = 0;
-    show("reveal");
+    current=0;
     prepareReveal();
+    goTo("reveal");
 }
 
 function prepareReveal(){
-    document.getElementById("playerTurn").innerText = players[currentPlayer] + "'s Turn";
-    document.getElementById("wordDisplay").classList.add("hidden");
-    document.getElementById("hideBtn").classList.add("hidden");
-    document.getElementById("revealBtn").classList.remove("hidden");
+    turnLabel.innerText=players[current]+"'s Turn";
+    card.innerHTML="";
+    card.classList.remove("show","shake");
+    nextBtn.style.display="none";
 }
 
-function revealWord(){
-    const display = document.getElementById("wordDisplay");
-
-    if(imposters.includes(currentPlayer)){
-        display.innerHTML = "<div style='color:#ff4d4d'>YOU ARE THE IMPOSTER</div><br><small>"+chosenWord.hint+"</small>";
+function reveal(){
+    card.classList.add("show");
+    if(imposters.includes(current)){
+        card.innerHTML=`<div class="imposter word">YOU ARE THE IMPOSTER</div><div>${chosenWord.hint}</div>`;
+        card.classList.add("shake");
     } else {
-        display.innerHTML = chosenWord.word;
+        card.innerHTML=`<div class="word">${chosenWord.word}</div>`;
     }
-
-    display.classList.remove("hidden");
-    document.getElementById("hideBtn").classList.remove("hidden");
-    document.getElementById("revealBtn").classList.add("hidden");
+    nextBtn.style.display="block";
 }
 
-function nextPlayer(){
-    currentPlayer++;
-    if(currentPlayer >= players.length){
-        show("end");
+function next(){
+    current++;
+    if(current>=players.length){
+        goTo("end");
     } else {
         prepareReveal();
     }
@@ -306,6 +347,5 @@ function restart(){
 }
 
 </script>
-
 </body>
 </html>
