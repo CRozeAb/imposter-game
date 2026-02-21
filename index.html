@@ -275,7 +275,7 @@ body::before{
 
     <div class="panel">
       <label class="small">Number of players (3–20)</label>
-      <input id="playerCount" class="input" type="number" min="3" max="20" value="4" onchange="renderPlayerInputs()" />
+      <input id="playerCount" class="input" type="number" min="3" max="20" value="4" onchange="renderPlayerInputs();syncPercentInputs()" />
       <div id="playersContainer" style="margin-top:8px"></div>
       <div style="height:8px"></div>
       <div class="row">
@@ -297,8 +297,26 @@ body::before{
       <label class="small">Choose a category</label>
       <select id="categorySelect" class="input"></select>
 
-      <label class="small" style="margin-top:10px">Number of imposters</label>
-      <input id="imposterCount" class="input" type="number" min="1" value="1" />
+      <label class="small" style="margin-top:10px">Allocation mode</label>
+      <div style="display:flex; gap:8px; margin-bottom:8px">
+        <label style="flex:1"><input type="radio" name="allocMode" value="counts" checked onchange="renderAllocInputs()" /> &nbsp; Counts</label>
+        <label style="flex:1"><input type="radio" name="allocMode" value="percent" onchange="renderAllocInputs()" /> &nbsp; Percentages</label>
+      </div>
+
+      <div id="allocCounts">
+        <label class="small">Number of imposters</label>
+        <input id="imposterCount" class="input" type="number" min="0" value="1" />
+        <label class="small">Number of jesters</label>
+        <input id="jesterCount" class="input" type="number" min="0" value="0" />
+      </div>
+
+      <div id="allocPercents" style="display:none">
+        <label class="small">Imposter % (0–100)</label>
+        <input id="imposterPercent" class="input" type="number" min="0" max="100" value="20" onchange="syncPercentInputs()" />
+        <label class="small">Jester % (0–100)</label>
+        <input id="jesterPercent" class="input" type="number" min="0" max="100" value="0" onchange="syncPercentInputs()" />
+        <div style="font-size:12px; opacity:0.8">Counts will be rounded from the percentages and adjusted to keep at least one crew member.</div>
+      </div>
 
       <div style="height:8px"></div>
       <label class="small">
@@ -335,6 +353,31 @@ body::before{
     </div>
   </div>
 
+  <!-- WHO STARTS SCREEN (between final reveal and results) -->
+  <div id="screen-who" class="screen">
+    <div class="header">
+      <button class="backBtn" onclick="goBack()">← Back</button>
+      <div class="title">Who Starts?</div>
+      <div style="width:48px"></div>
+    </div>
+
+    <div class="panel" style="text-align:center">
+      <div style="font-size:14px; opacity:0.9; margin-bottom:8px">Randomly choose who starts the discussion/vote</div>
+      <div class="revealCard" id="whoCard" style="min-height:120px; display:flex; flex-direction:column; align-items:center; justify-content:center">
+        <div style="opacity:0.85">Starting player</div>
+        <div class="word" id="whoName">—</div>
+        <div style="height:8px"></div>
+        <div style="font-size:12px; opacity:0.8">Tap shuffle to pick again</div>
+      </div>
+
+      <div style="height:12px"></div>
+      <div class="row">
+        <div class="col"><button class="btn" onclick="shuffleStarter()">Shuffle</button></div>
+        <div class="col"><button class="btn secondary" onclick="goTo('screen-end')">See Results</button></div>
+      </div>
+    </div>
+  </div>
+
   <!-- END / RESULTS SCREEN -->
   <div id="screen-end" class="screen">
     <div class="header">
@@ -351,6 +394,9 @@ body::before{
         <div style="height:12px"></div>
         <div style="font-size:13px; opacity:0.85">Imposter(s)</div>
         <div id="finalImposters" style="margin-top:8px; font-weight:700"></div>
+        <div style="height:10px"></div>
+        <div style="font-size:13px; opacity:0.85">Jester(s)</div>
+        <div id="finalJesters" style="margin-top:8px; font-weight:700; opacity:0.95"></div>
       </div>
 
       <div class="row">
@@ -365,12 +411,11 @@ body::before{
 
 <script>
 /* ==============================
-   GAME DATA: WORDS + NICHE HINTS
-   Each item: { word: "...", hint: "one short sentence" }
-   (100 items per category)
+   GAME DATA: WORDS + LONG HINTS (kept intact)
+   We'll display short single-word vague hints to imposters.
    ============================== */
 
-/* Movies - 100 entries */
+/* Movies - (partial list shown in the original; kept same entries) */
 const Movies = [
 {word:"Avatar", hint:"Famous 2009 sci-fi with an alien moon and blue humanoids."},
 {word:"Titanic", hint:"A 1997 romance around a real North Atlantic ship that sank."},
@@ -465,7 +510,7 @@ const Movies = [
 {word:"Thor Ragnarok", hint:"A god loses his hammer and faces an arena world."}
 ];
 
-/* Celebrities - 100 entries */
+/* Celebrities */
 const Celebrities = [
 {word:"Taylor Swift", hint:"A singer-songwriter notable for albums that switch eras and storytelling."},
 {word:"Drake", hint:"A chart-topping artist who started on a teen drama before rapping."},
@@ -564,7 +609,7 @@ const Celebrities = [
 {word:"Rupert Grint", hint:"An actor recognized for a loyal friend role in a major fantasy series."}
 ];
 
-/* Animals - 100 entries */
+/* Animals - large list kept */
 const Animals = [
 {word:"Lion", hint:"A big African cat with a male mane and pride social structure."},
 {word:"Tiger", hint:"A striped apex predator that prefers solitary hunting."},
@@ -659,7 +704,7 @@ const Animals = [
 {word:"Yak", hint:"A shaggy high-altitude bovine common in the Himalayas."}
 ];
 
-/* Objects - 100 entries */
+/* Objects - kept */
 const Objects = [
 {word:"Phone", hint:"A handheld device central to modern communication and apps."},
 {word:"Laptop", hint:"A portable computer used for work, media, and coding."},
@@ -763,18 +808,23 @@ const Objects = [
    UTILITY + STATE
    ============================== */
 
-const SCREENS = ['screen-start','screen-players','screen-category','screen-reveal','screen-end'];
+const SCREENS = ['screen-start','screen-players','screen-category','screen-reveal','screen-who','screen-end'];
 let historyStack = ['screen-start'];
 
 let players = [];        // array of player names
 let imposters = [];      // array of player indices
+let jesters = [];        // array of player indices
 let chosen = null;       // chosen word object {word, hint}
 let currentIndex = 0;    // which player is currently revealing
 let hintsEnabled = true; // toggle for imposter hints
 
+/* single-word vague hints (barely helpful) */
+const vagueHints = [
+  "place","person","object","animal","color","action","time","space","hero","villain","sound","nature","city","food","vehicle","dream","love","crime","magic","old","new","fun","scary","fight","song","dance","water","sky","road","game"
+];
+
 /* ====== Screen helpers ====== */
 function goTo(screenId){
-  // push history unless navigating forward from reveal to end
   const current = historyStack[historyStack.length-1];
   if(current !== screenId) historyStack.push(screenId);
   SCREENS.forEach(s => {
@@ -787,13 +837,9 @@ function goBack(){
   if(historyStack.length>1){
     historyStack.pop(); // current
     const prev = historyStack[historyStack.length-1];
-    // animate current exit-left quickly
     const screensEls = SCREENS.map(id => document.getElementById(id));
     screensEls.forEach(s => s.classList.remove('active','exit-left'));
-    // mark previous active
     document.getElementById(prev).classList.add('active');
-  } else {
-    // from start, do nothing
   }
 }
 function noop(){}
@@ -829,7 +875,6 @@ function collectPlayers(){
     const val = (document.getElementById('playerInput'+i) || {}).value || `Player ${i+1}`;
     players.push(val.trim() || `Player ${i+1}`);
   }
-  // prepare category select if not yet
   populateCategories();
   goTo('screen-category');
 }
@@ -848,27 +893,89 @@ function populateCategories(){
   });
 }
 
+function renderAllocInputs(){
+  const mode = document.querySelector('input[name="allocMode"]:checked').value;
+  document.getElementById('allocCounts').style.display = (mode === 'counts') ? 'block' : 'none';
+  document.getElementById('allocPercents').style.display = (mode === 'percent') ? 'block' : 'none';
+  syncPercentInputs();
+}
+
+function syncPercentInputs(){
+  // update percentage inputs to not exceed 100, and show computed counts as hints (not required)
+  const pCount = Number(document.getElementById('playerCount').value || 4);
+  const ip = Number(document.getElementById('imposterPercent')?.value || 0);
+  const jp = Number(document.getElementById('jesterPercent')?.value || 0);
+  // nothing else needed; counts computed at startGame
+}
+
+/* compute counts helper */
+function computeCountsFromPercents(pCount){
+  let ip = Math.round(Number(document.getElementById('imposterPercent').value || 0) * pCount / 100);
+  let jp = Math.round(Number(document.getElementById('jesterPercent').value || 0) * pCount / 100);
+  // cap logic: ensure at least 1 crew remains if possible
+  if(ip < 0) ip = 0;
+  if(jp < 0) jp = 0;
+  if(ip >= pCount) ip = Math.max(0, pCount - 1);
+  if(ip + jp >= pCount){
+    // reduce jester first
+    jp = Math.max(0, pCount - ip - 1);
+    if(ip + jp >= pCount){
+      ip = Math.max(0, pCount - jp - 1);
+    }
+  }
+  return {ip, jp};
+}
+
 function startGame(){
   // apply hint toggle
   hintsEnabled = Boolean(document.getElementById('toggleHints').checked);
   const catName = document.getElementById('categorySelect').value || 'Movies';
-  const impCount = Math.max(1, Math.min(players.length-1, Number(document.getElementById('imposterCount').value || 1)));
-  // select list
+  const mode = document.querySelector('input[name="allocMode"]:checked').value;
+
+  // choose list
   let list;
   if(catName==='Movies') list = Movies;
   else if(catName==='Celebrities') list = Celebrities;
   else if(catName==='Animals') list = Animals;
   else list = Objects;
+
   // choose random item
   chosen = list[Math.floor(Math.random() * list.length)];
+
+  // determine counts
+  const pCount = players.length || Math.max(3, Number(document.getElementById('playerCount').value || 4));
+  let impCount = 0;
+  let jestCount = 0;
+  if(mode === 'counts'){
+    impCount = Math.max(0, Math.min(pCount-1, Number(document.getElementById('imposterCount').value || 0)));
+    jestCount = Math.max(0, Math.min(pCount-impCount-1, Number(document.getElementById('jesterCount').value || 0)));
+    // ensure at least one crew if possible
+    if(impCount + jestCount >= pCount) {
+      // reduce jesters
+      jestCount = Math.max(0, pCount - impCount - 1);
+      if(impCount + jestCount >= pCount) impCount = Math.max(0, pCount - jestCount - 1);
+    }
+  } else {
+    const computed = computeCountsFromPercents(pCount);
+    impCount = computed.ip;
+    jestCount = computed.jp;
+  }
+
   // pick unique imposter indices
   imposters = [];
+  jesters = [];
+  // pick imposters
   while(imposters.length < impCount){
     const r = Math.floor(Math.random()*players.length);
     if(!imposters.includes(r)) imposters.push(r);
   }
+  // pick jesters distinct from imposters
+  while(jesters.length < jestCount){
+    const r = Math.floor(Math.random()*players.length);
+    if(!imposters.includes(r) && !jesters.includes(r)) jesters.push(r);
+  }
+
   currentIndex = 0;
-  // prepare UI
   prepareRevealUI();
   goTo('screen-reveal');
 }
@@ -890,18 +997,26 @@ function prepareRevealUI(){
 
 function handleReveal(){
   const card = document.getElementById('revealCard');
-  // content when crew
+  // imposter view
   if(imposters.includes(currentIndex)){
     let html = `<div class="imposterNotice imposterPulse">YOU ARE THE IMPOSTER</div>`;
     if(hintsEnabled){
-      html += `<div style="height:10px"></div><div style="opacity:0.92">${chosen.hint}</div>`;
+      const hint = generateOneWordHint();
+      html += `<div style="height:10px"></div><div style="opacity:0.92">${escapeHtml(hint)}</div>`;
     } else {
       html += `<div style="height:10px"></div><div style="opacity:0.85">No hint (disabled)</div>`;
     }
     card.innerHTML = html;
-    // imposter dramatic effect
     card.classList.add('revealAnim','shake');
+  } else if (jesters.includes(currentIndex)){
+    // jester view: they receive the word like crew but are told they are the JESTER
+    let html = `<div style="font-weight:800; color:#ffd966">YOU ARE THE JESTER</div>`;
+    html += `<div style="height:8px"></div><div style="opacity:0.9">You win if you get voted out</div>`;
+    html += `<div style="height:10px"></div><div class="word">${escapeHtml(chosen.word)}</div>`;
+    card.innerHTML = html;
+    card.classList.add('revealAnim');
   } else {
+    // crew view
     card.innerHTML = `<div style="opacity:0.85">CREW</div><div class="word">${escapeHtml(chosen.word)}</div>`;
     card.classList.add('revealAnim');
   }
@@ -911,16 +1026,32 @@ function handleReveal(){
 }
 
 function handleHide(){
-  // move to next player or end
+  // move to next player or special "who starts" screen
   currentIndex++;
   if(currentIndex >= players.length){
-    // show results end screen
-    showResults();
-    goTo('screen-end');
+    // go to who-starts screen before showing results
+    // prepare the who-starts display
+    pickStarter();
+    goTo('screen-who');
   } else {
     prepareRevealUI();
-    // slide transition handled by goTo -> goTo('screen-reveal') would push history, but we're already there; just reset UI
   }
+}
+
+/* ============================
+   WHO STARTS / SHUFFLE
+   ============================ */
+let currentStarterIndex = null;
+function pickStarter(){
+  if(players.length === 0) {
+    document.getElementById('whoName').textContent = '—';
+    return;
+  }
+  currentStarterIndex = Math.floor(Math.random() * players.length);
+  document.getElementById('whoName').textContent = players[currentStarterIndex];
+}
+function shuffleStarter(){
+  pickStarter();
 }
 
 /* ============================
@@ -929,7 +1060,10 @@ function handleHide(){
 function showResults(){
   document.getElementById('finalWord').textContent = chosen.word;
   const impNames = imposters.map(i => players[i]);
-  document.getElementById('finalImposters').innerHTML = impNames.map(n => `<div style="padding:8px 10px; background:rgba(255,255,255,0.03); border-radius:10px; margin-top:6px">${escapeHtml(n)}</div>`).join('');
+  const jesterNames = jesters.map(i => players[i]);
+
+  document.getElementById('finalImposters').innerHTML = impNames.length ? impNames.map(n => `<div style="padding:8px 10px; background:rgba(255,255,255,0.03); border-radius:10px; margin-top:6px">${escapeHtml(n)}</div>`).join('') : '<div style="opacity:0.8">None</div>';
+  document.getElementById('finalJesters').innerHTML = jesterNames.length ? jesterNames.map(n => `<div style="padding:8px 10px; background:rgba(255,255,255,0.03); border-radius:10px; margin-top:6px">${escapeHtml(n)} <span style="font-size:12px; opacity:0.8; margin-left:8px">— wins if voted out</span></div>`).join('') : '<div style="opacity:0.8">None</div>';
   // push end to history stack for back nav
   historyStack.push('screen-end');
 }
@@ -938,6 +1072,7 @@ function restartGame(){
   // fully reset state but keep categories and UI
   players = [];
   imposters = [];
+  jesters = [];
   chosen = null;
   currentIndex = 0;
   historyStack = ['screen-start'];
@@ -945,10 +1080,23 @@ function restartGame(){
   document.getElementById('playerCount').value = 4;
   document.getElementById('playersContainer').innerHTML = '';
   renderPlayerInputs();
-  // reset toggle
+  // reset toggle & alloc UI
   document.getElementById('toggleHints').checked = true;
+  document.querySelector('input[name="allocMode"][value="counts"]').checked = true;
+  renderAllocInputs();
+  document.getElementById('imposterCount').value = 1;
+  document.getElementById('jesterCount').value = 0;
   // go home
   goTo('screen-start');
+}
+
+/* ============================
+   HINT GENERATION
+   single-word vague hints
+   ============================ */
+function generateOneWordHint(){
+  // pick a random vague hint to be intentionally unhelpful
+  return vagueHints[Math.floor(Math.random() * vagueHints.length)];
 }
 
 /* ============================
@@ -962,6 +1110,7 @@ function escapeHtml(str){
 /* initial render */
 renderPlayerInputs();
 populateCategories();
+renderAllocInputs();
 
 </script>
 </body>
