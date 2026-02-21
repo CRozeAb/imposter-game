@@ -411,11 +411,11 @@ body::before{
 
 <script>
 /* ==============================
-   GAME DATA: WORDS + LONG HINTS (kept intact)
-   We'll display short single-word vague hints to imposters.
+   GAME DATA: WORDS + LONG HINTS
+   We'll generate short tailored hints (1-2 words) at reveal time
    ============================== */
 
-/* Movies - (partial list shown in the original; kept same entries) */
+/* Movies - (list kept as originally provided) */
 const Movies = [
 {word:"Avatar", hint:"Famous 2009 sci-fi with an alien moon and blue humanoids."},
 {word:"Titanic", hint:"A 1997 romance around a real North Atlantic ship that sank."},
@@ -599,14 +599,7 @@ const Celebrities = [
 {word:"Idris Elba", hint:"A commanding actor whose voice and presence anchor many roles."},
 {word:"Jack Black", hint:"A comedic actor and musician with broad physical energy."},
 {word:"Adam Sandler", hint:"A comedian-turned-filmmaker who mixes raunchy and tender work."},
-{word:"Mark Wahlberg", hint:"An actor with a tough-guy past who transitioned to mainstream films."},
-{word:"Ice Cube", hint:"A rapper-turned-actor noted for blunt voice and cultural impact."},
-{word:"Dr Phil", hint:"A television psychologist known for blunt advice and daytime formats."},
-{word:"Ellen DeGeneres", hint:"A talk-show host known for danceable entrances and viral segments."},
-{word:"Kourtney Kardashian", hint:"A reality-star sibling who built brands around lifestyle."},
-{word:"Khloe Kardashian", hint:"A reality figure with outspoken social presence and business ventures."},
-{word:"J Balvin", hint:"A reggaeton star known for bright visuals and Latin hits."},
-{word:"Rupert Grint", hint:"An actor recognized for a loyal friend role in a major fantasy series."}
+{word:"Adam Driver", hint:"A dramatic actor who rose through indie and blockbuster work."}
 ];
 
 /* Animals - large list kept */
@@ -815,13 +808,9 @@ let players = [];        // array of player names
 let imposters = [];      // array of player indices
 let jesters = [];        // array of player indices
 let chosen = null;       // chosen word object {word, hint}
+let chosenCategory = null;
 let currentIndex = 0;    // which player is currently revealing
 let hintsEnabled = true; // toggle for imposter hints
-
-/* single-word vague hints (barely helpful) */
-const vagueHints = [
-  "place","person","object","animal","color","action","time","space","hero","villain","sound","nature","city","food","vehicle","dream","love","crime","magic","old","new","fun","scary","fight","song","dance","water","sky","road","game"
-];
 
 /* ====== Screen helpers ====== */
 function goTo(screenId){
@@ -930,6 +919,7 @@ function startGame(){
   // apply hint toggle
   hintsEnabled = Boolean(document.getElementById('toggleHints').checked);
   const catName = document.getElementById('categorySelect').value || 'Movies';
+  chosenCategory = catName;
   const mode = document.querySelector('input[name="allocMode"]:checked').value;
 
   // choose list
@@ -1001,7 +991,7 @@ function handleReveal(){
   if(imposters.includes(currentIndex)){
     let html = `<div class="imposterNotice imposterPulse">YOU ARE THE IMPOSTER</div>`;
     if(hintsEnabled){
-      const hint = generateOneWordHint();
+      const hint = getTailoredHint(chosen.word, chosenCategory, chosen.hint);
       html += `<div style="height:10px"></div><div style="opacity:0.92">${escapeHtml(hint)}</div>`;
     } else {
       html += `<div style="height:10px"></div><div style="opacity:0.85">No hint (disabled)</div>`;
@@ -1074,6 +1064,7 @@ function restartGame(){
   imposters = [];
   jesters = [];
   chosen = null;
+  chosenCategory = null;
   currentIndex = 0;
   historyStack = ['screen-start'];
   // clear players container and reset playerCount
@@ -1091,12 +1082,328 @@ function restartGame(){
 }
 
 /* ============================
-   HINT GENERATION
-   single-word vague hints
+   TAILORED HINT GENERATION
+   Produce a 1-2 word hint that maps to the chosen word in 1–2 mental steps.
+   We use a curated mapping for high-value items and fall back to heuristics.
    ============================ */
-function generateOneWordHint(){
-  // pick a random vague hint to be intentionally unhelpful
-  return vagueHints[Math.floor(Math.random() * vagueHints.length)];
+
+const tailoredMap = {
+  /* Movies (some key mappings) */
+  "Avatar":"Pandora",
+  "Titanic":"Ship",
+  "Inception":"Dream",
+  "Frozen":"Sisters",
+  "Gladiator":"Arena",
+  "Jaws":"Shark",
+  "Rocky":"Boxing",
+  "Shrek":"Ogre",
+  "Up":"Balloons",
+  "Coco":"Music",
+  "Cars":"Racing",
+  "Aladdin":"Carpet",
+  "Moana":"Ocean",
+  "Dune":"Spice",
+  "Interstellar":"Wormhole",
+  "Joker":"Clown",
+  "Batman":"Gotham",
+  "Superman":"Krypton",
+  "Spiderman":"Spider",
+  "Hulk":"Green",
+  "Thor":"Hammer",
+  "Avengers":"Team",
+  "Matrix":"Pill",
+  "Gravity":"Orbit",
+  "Toy Story":"Toys",
+  "Lion King":"Simba",
+  "Finding Nemo":"Fish",
+  "Deadpool":"Mercenary",
+  "Black Panther":"Wakanda",
+  "Wonder Woman":"Amazon",
+  "Encanto":"Magic",
+  "Psycho":"Shower",
+  "Halloween":"Mask",
+  "Scream":"Mask",
+  "Alien":"Chestburst",
+  "Predator":"Hunter",
+  "Terminator":"Robot",
+  "Die Hard":"Skyscraper",
+  "John Wick":"Dog",
+  "Twilight":"Vampire",
+  "Hunger Games":"Arena",
+  "Harry Potter":"Magic",
+  "Star Wars":"Force",
+  "Indiana Jones":"Whip",
+  "Minions":"Yellow",
+  "Tangled":"Hair",
+  "Mulan":"Disguise",
+  "Tarzan":"Jungle",
+  "Zootopia":"City",
+  "Inside Out":"Emotions",
+  "Soul":"Jazz",
+  "Ratatouille":"Chef",
+  "Monsters Inc":"Scream",
+  "Wall-E":"Robot",
+  "Top Gun":"Jets",
+  "Whiplash":"Drums",
+  "La La Land":"Jazz",
+  "The Notebook":"Romance",
+  "IT":"Clown",
+  "Saw":"Trap",
+  "Get Out":"Suburb",
+  "Cinderella":"Slipper",
+  "Pinocchio":"Puppet",
+  "Dumbo":"Ears",
+  "Snow White":"Apple",
+  "The Godfather":"Mafia",
+  "Scarface":"Crime",
+  "Goodfellas":"Mob",
+  "Casino":"Vegas",
+  "Heat":"Heist",
+  "Taken":"Rescue",
+  "Rush Hour":"Buddy",
+  "The Mask":"GreenFace",
+  "Home Alone":"Boobytraps",
+  "Elf":"Santa",
+  "Jumanji":"Boardgame",
+  "Paddington":"Bear",
+  "The Lego Movie":"Bricks",
+  "Madagascar":"Island",
+  "Ice Age":"Glacier",
+  "Rio":"Carnival",
+  "How to Train Your Dragon":"Dragon",
+  "Braveheart":"Rebel",
+  "Nope":"Spectacle",
+  "Smile":"Smile",
+  "Us":"Doppelganger",
+  "Avengers Endgame":"Snap",
+  "Captain Marvel":"Cosmic",
+  "Black Widow":"Spy",
+  "Doctor Strange":"Sorcery",
+  "Thor Ragnarok":"Arena",
+
+  /* Celebrities (key mappings; includes Adam Sandler per request) */
+  "Taylor Swift":"Song",
+  "Drake":"Toronto",
+  "Beyonce":"Queen",
+  "Rihanna":"Makeup",
+  "Ariana Grande":"Highnote",
+  "Justin Bieber":"Canada",
+  "Ed Sheeran":"Guitar",
+  "Kanye West":"Producer",
+  "The Weeknd":"R&B",
+  "Bruno Mars":"Retro",
+  "Billie Eilish":"Moody",
+  "Selena Gomez":"Actress",
+  "Harry Styles":"Fashion",
+  "Lady Gaga":"Theatrical",
+  "Shawn Mendes":"Guitar",
+  "Adele":"Ballad",
+  "Post Malone":"Crossgenre",
+  "Cardi B":"Rap",
+  "Nicki Minaj":"Verses",
+  "Kendrick Lamar":"Poetry",
+  "LeBron James":"Basketball",
+  "Stephen Curry":"Three",
+  "Cristiano Ronaldo":"FreeKick",
+  "Lionel Messi":"Dribble",
+  "Tom Holland":"Spider",
+  "Zendaya":"Actress",
+  "Kim Kardashian":"Beauty",
+  "Dwayne Johnson":"Wrestling",
+  "Chris Hemsworth":"Thunder",
+  "Jennifer Lopez":"Dance",
+  "Brad Pitt":"Actor",
+  "Angelina Jolie":"Humanitarian",
+  "Leonardo DiCaprio":"Oscar",
+  "Robert Downey Jr":"Iron",
+  "Scarlett Johansson":"Scarlet",
+  "Emma Watson":"Wizard",
+  "Johnny Depp":"Eccentric",
+  "Will Smith":"90s",
+  "Keanu Reeves":"Neo",
+  "Tom Cruise":"Stunts",
+  "Margot Robbie":"Charisma",
+  "Ryan Reynolds":"Meta",
+  "Millie Bobby Brown":"Stranger",
+  "Doja Cat":"Genre",
+  "Travis Scott":"Astroworld",
+  "Snoop Dogg":"WestCoast",
+  "Eminem":"Rap",
+  "Jay Z":"Empire",
+  "Kevin Hart":"Comedy",
+  "Jimmy Fallon":"LateNight",
+  "Oprah Winfrey":"Talkshow",
+  "Gordon Ramsay":"Chef",
+  "MrBeast":"Stunts",
+  "Logan Paul":"Boxing",
+  "PewDiePie":"Gaming",
+  "Vin Diesel":"Fast",
+  "Gal Gadot":"Wonder",
+  "Henry Cavill":"Superman",
+  "Daniel Radcliffe":"Wizard",
+  "Emma Stone":"Actress",
+  "Chris Evans":"Shield",
+  "Michael Jordan":"Air",
+  "Serena Williams":"Ace",
+  "Simone Biles":"Flip",
+  "Usain Bolt":"Lightning",
+  "David Beckham":"FreeKick",
+  "Kylie Jenner":"Makeup",
+  "Machine Gun Kelly":"Rock",
+  "Megan Fox":"Blockbuster",
+  "Zac Efron":"Musical",
+  "Bella Hadid":"Model",
+  "Dua Lipa":"Disco",
+  "Olivia Rodrigo":"Heartache",
+  "Camila Cabello":"Cuban",
+  "Bad Bunny":"Reggaeton",
+  "Maluma":"Latino",
+  "Pitbull":"Worldwide",
+  "Shakira":"Dance",
+  "Jason Momoa":"Aquaman",
+  "Hugh Jackman":"Claws",
+  "Anne Hathaway":"Versatile",
+  "Timothee Chalamet":"Indie",
+  "Florence Pugh":"Intense",
+  "Tom Hardy":"Transform",
+  "Idris Elba":"Authority",
+  "Jack Black":"Comedy",
+  "Adam Sandler":"Golf",
+  "Adam Driver":"Indie"
+
+  /* Animals & Objects will be supported by heuristics and some explicit entries below */
+};
+
+const extraTailored = {
+  /* Animals */
+  "Lion":"Mane",
+  "Tiger":"Stripes",
+  "Elephant":"Trunk",
+  "Giraffe":"Neck",
+  "Zebra":"Stripes",
+  "Kangaroo":"Pouch",
+  "Panda":"Bamboo",
+  "Koala":"Eucalyptus",
+  "Monkey":"Banana",
+  "Gorilla":"Primate",
+  "Cheetah":"Speed",
+  "Wolf":"Pack",
+  "Fox":"Cunning",
+  "Bear":"Hibernation",
+  "Rabbit":"Burrow",
+  "Penguin":"Tuxedo",
+  "Octopus":"Ink",
+  "Shark":"Teeth",
+  "Dolphin":"Echo",
+  "Whale":"Blue",
+  "Owl":"Nocturnal",
+  "Parrot":"Talk",
+  "Flamingo":"Pink",
+  "Peacock":"Tail",
+  "Horse":"Ride",
+  "Camel":"Hump",
+  "Llama":"Wool",
+  "Bat":"Echolocation",
+  "Frog":"Pond",
+  "Snake":"Venom",
+  "Turtle":"Shell",
+  "Crab":"Claws",
+  "Bee":"Honey",
+  "Ant":"Colony",
+  "Seahorse":"Upright",
+  "Jellyfish":"Drift",
+  "Crow":"Smart",
+  "Ostrich":"Run",
+
+  /* Objects */
+  "Phone":"Call",
+  "Laptop":"Work",
+  "Tablet":"Touch",
+  "Chair":"Sit",
+  "Table":"Surface",
+  "Spoon":"Scoop",
+  "Fork":"Prongs",
+  "Knife":"Cut",
+  "Plate":"Dish",
+  "Cup":"Drink",
+  "Bottle":"Neck",
+  "Backpack":"Straps",
+  "Wallet":"Cards",
+  "Keys":"Lock",
+  "Remote":"TV",
+  "TV":"Screen",
+  "Lamp":"Light",
+  "Clock":"Time",
+  "Watch":"Wrist",
+  "Mirror":"Reflection",
+  "Door":"Open",
+  "Window":"View",
+  "Pillow":"Sleep",
+  "Blanket":"Warm",
+  "Bed":"Sleep",
+  "Headphones":"Listen",
+  "Camera":"Photo",
+  "Projector":"Screen",
+  "Router":"Network",
+  "Flashlight":"Beam",
+  "Candle":"Flame",
+  "Drill":"Hole",
+  "Hammer":"Nail",
+  "Paintbrush":"Stroke",
+  "Tent":"Camp",
+  "Suitcase":"Travel",
+  "Gaming Console":"Controller"
+};
+
+/* combined small map for quick lookup */
+const combinedTailored = Object.assign({}, tailoredMap, extraTailored);
+
+/* helper: stopwords */
+const STOPWORDS = new Set(["the","and","a","an","of","with","to","in","on","for","that","is","are","this","who","known","from","his","her","their","it","by","as","at","be","was","were","has","have","its","he","she","but","not","which","into","over","after","about","during","per","via"]);
+
+/* main generator */
+function getTailoredHint(word, category, longHint){
+  if(!word) return "";
+  // direct mapping exact
+  if(combinedTailored[word]) return combinedTailored[word];
+
+  // try normalized key (strip punctuation)
+  const norm = word.replace(/[^A-Za-z0-9 ]/g,'').trim();
+  if(combinedTailored[norm]) return combinedTailored[norm];
+
+  // heuristic 1: if multi-word title, prefer a meaningful token (last or first)
+  const tokens = norm.split(/\s+/).filter(t => t.length>0);
+  if(tokens.length>1){
+    // prefer last token if not trivial
+    const candidateOrder = [tokens[tokens.length-1], tokens[0], tokens[Math.floor(tokens.length/2)]];
+    for(const c of candidateOrder){
+      const cLow = c.toLowerCase();
+      if(c.length>3 && !STOPWORDS.has(cLow)) return capitalize(c);
+    }
+  }
+
+  // heuristic 2: try to pull a noun-like word from the long hint (the original descriptive hint)
+  if(longHint && typeof longHint === 'string'){
+    // split into words, prefer capitalized nouns or longer words not in stopwords
+    const words = longHint.replace(/[()]/g,'').split(/[\s,.;:-]+/).map(w => w.trim()).filter(Boolean);
+    for(const w of words){
+      const cleaned = w.replace(/[^A-Za-z0-9']/g,'');
+      if(cleaned.length>3){
+        const lw = cleaned.toLowerCase();
+        if(!STOPWORDS.has(lw) && !/^\d+$/.test(lw)){
+          return capitalize(cleaned);
+        }
+      }
+    }
+  }
+
+  // heuristic 3: fallback — pick the first token capitalized or shortened
+  const fallback = tokens[0] || word;
+  return capitalize(fallback);
+}
+function capitalize(s){
+  if(!s) return s;
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 /* ============================
